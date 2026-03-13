@@ -137,18 +137,16 @@ export async function authenticatedRequest(
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
   const token = await getAuthToken(request, username, password);
   _jwtToken = token;
-  // Store token in session storage for the page
+  // Navigate to the app, inject the token into sessionStorage, then reload to apply
   await page.goto('/');
   await page.evaluate((t) => {
-  <%_ if (clientFrameworkVue) { _%>
+<%_ if (clientFrameworkVue) { _%>
     sessionStorage.setItem('jhi-authenticationToken', t);
-  <%_ } else { _%>
+<%_ } else { _%>
     sessionStorage.setItem('jhi-authenticationToken', JSON.stringify(t));
-  <%_ } _%>
+<%_ } _%>
   }, token);
-  // Reload to pick up the token and wait for the app to fully mount
-  await page.reload();
-  await page.locator(accountMenuSelector).waitFor({ state: 'visible', timeout: 15000 });
+  await page.reload({ waitUntil: 'networkidle' });
 }
 <%_ } else if (authenticationTypeOauth2) { _%>
 /**

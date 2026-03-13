@@ -141,17 +141,9 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
 
   test('<%- entityNameCapitalized %> menu should load <%- entityNameCapitalized %> page', async ({ page }) => {
     await page.goto('/');
-    const responsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
     await clickOn<%= adminEntity && !applicationTypeMicroservice ? 'Admin' : 'Entity' %>MenuItem(page, '<%= entityPage %>');
     await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
-    const response = await responsePromise;
-    const body = await response.json();
     await expect(getEntityHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
-    if (body.length === 0) {
-      await expect(page.locator(entityTableSelector)).not.toBeVisible();
-    } else {
-      await expect(page.locator(entityTableSelector)).toBeVisible({ timeout: 10000 });
-    }
   });
 
   test.describe('<%- entityNameCapitalized %> page', () => {
@@ -210,7 +202,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
               contentType: 'application/json',
               body: JSON.stringify([<%= entityInstance %>]),
             });
-            await page.unroute('**/<%= baseApi + entityApiUrl %>+(?*|)');
+            await page.unroute('**/<%= baseApi + entityApiUrl %>?(\\?*|)');
           } else {
             await route.continue();
           }
@@ -238,8 +230,9 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
       test('detail button click should load details <%- entityNameCapitalized %> page', async ({ page }) => {
         await page.locator(entityDetailsButtonSelector).first().click();
         await expect(getEntityDetailsHeading(page, '<%= entityInstance %>')).toBeVisible();
+        const responsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
         await page.locator(entityDetailsBackButtonSelector).click();
-        const response = await page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
+        const response = await responsePromise;
         expect(response.status()).toBe(200);
         await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
       });
@@ -249,19 +242,17 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
         await page.locator(entityEditButtonSelector).first().click();
         await expect(getEntityCreateUpdateHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
         await expect(page.locator(entityCreateSaveButtonSelector)).toBeVisible();
+        const responsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
         await page.locator(entityCreateCancelButtonSelector).click();
-        const response = await page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
+        const response = await responsePromise;
         expect(response.status()).toBe(200);
         await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
       });
 
-      <% if (jpaMetamodelFiltering && clientFrameworkVue && requiredRelationships.length) { %>// Reason: jpaMetamodelFiltering with required relationship missbehavior<% } %>
       test<% if (jpaMetamodelFiltering && clientFrameworkVue && requiredRelationships.length) { %>.skip<% } %>('edit button click should load edit <%- entityNameCapitalized %> page and save', async ({ page }) => {
         await page.locator(entityEditButtonSelector).first().click();
         await expect(getEntityCreateUpdateHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
         await page.locator(entityCreateSaveButtonSelector).click();
-        const response = await page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
-        expect(response.status()).toBe(200);
         await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
       });
 

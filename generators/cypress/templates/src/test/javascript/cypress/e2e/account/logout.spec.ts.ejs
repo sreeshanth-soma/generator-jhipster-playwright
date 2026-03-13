@@ -25,15 +25,15 @@ test.describe('logout', () => {
     await login(page, request, username, password);
     await page.goto('/');
 <%_ if (authenticationUsesCsrf) { _%>
-    // Wait for CSRF-protected logout to complete
-    const logoutResponse = page.waitForResponse('**/api/logout');
+    const logoutPromise = page.waitForResponse('**/api/logout');
 <%_ } _%>
     await clickOnLogoutItem(page);
 <%_ if (authenticationUsesCsrf) { _%>
-    await logoutResponse;
+    await logoutPromise;
 <%_ } _%>
-    // Wait for React to process the logout and show login item
-    await page.locator(navbarSelector).locator(accountMenuSelector).waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for the logout item to disappear (React processed the logout)
+    await expect(page.locator('[data-cy="logout"]')).not.toBeVisible({ timeout: 10000 });
+    // Open the account menu and verify login item is visible
     await page.locator(navbarSelector).locator(accountMenuSelector).click();
     await expect(page.locator(navbarSelector).locator(accountMenuSelector).locator(loginItemSelector)).toBeVisible({ timeout: 10000 });
   });
