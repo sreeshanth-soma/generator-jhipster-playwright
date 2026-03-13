@@ -1,8 +1,11 @@
 /**
  * Playwright support commands
- * Translated from Cypress commands.ts
+ * Translated from Cypress commands.ts (v9)
  *
- * All selectors use the same data-cy attributes as Cypress.
+ * Source EJS variables used:
+ *   - authenticationTypeOauth2, authenticationTypeJwt, authenticationTypeSession
+ *   - withAdminUi
+ *   - clientFrameworkAngular, clientFrameworkReact, clientFrameworkVue
  */
 import type { Page, APIRequestContext } from '@playwright/test';
 
@@ -21,6 +24,7 @@ export const loginItemSelector = '[data-cy="login"]';
 export const logoutItemSelector = '[data-cy="logout"]';
 export const entityItemSelector = '[data-cy="entity"]';
 
+<%_ if (!authenticationTypeOauth2) { _%>
 // Login
 export const titleLoginSelector = '[data-cy="loginTitle"]';
 export const errorLoginSelector = '[data-cy="loginError"]';
@@ -51,26 +55,25 @@ export const submitPasswordSelector = '[data-cy="submit"]';
 // Reset Password
 export const emailResetPasswordSelector = '[data-cy="emailResetPassword"]';
 export const submitInitResetPasswordSelector = '[data-cy="submit"]';
+<%_ } _%>
 
 // Administration
 export const swaggerFrameSelector = 'iframe[data-cy="swagger-frame"]';
 export const swaggerPageSelector = '[id="swagger-ui"]';
+<%_ if (withAdminUi) { _%>
 export const metricsPageHeadingSelector = '[data-cy="metricsPageHeading"]';
 export const healthPageHeadingSelector = '[data-cy="healthPageHeading"]';
 export const logsPageHeadingSelector = '[data-cy="logsPageHeading"]';
 export const configurationPageHeadingSelector = '[data-cy="configurationPageHeading"]';
+<%_ } _%>
 
 // ***********************************************
 // End Specific Selector Attributes
 // ***********************************************
 
-<%_ if (clientFrameworkAngular) { _%>
-export const classInvalid = 'ng-invalid';
-export const classValid = 'ng-valid';
-<%_ } else { _%>
-export const classInvalid = 'is-invalid';
-export const classValid = 'is-valid';
-<%_ } _%>
+export const classInvalid = <% if (clientFrameworkAngular) { %>'ng-invalid';<% } else { %>'is-invalid'<% } %>;
+
+export const classValid = <% if (clientFrameworkAngular) { %>'ng-valid';<% } else { %>'is-valid'<% } %>;
 
 export interface Credentials {
   adminUsername: string;
@@ -84,63 +87,71 @@ export interface Credentials {
  */
 export function credentials(): Credentials {
   return {
-    adminUsername: process.env.E2E_USERNAME ?? '<%= adminUsername ?? "admin" %>',
-    adminPassword: process.env.E2E_PASSWORD ?? '<%= adminPassword ?? "admin" %>',
-    username: process.env.E2E_USERNAME ?? '<%= username ?? "user" %>',
-    password: process.env.E2E_PASSWORD ?? '<%= password ?? "user" %>',
+    adminUsername: process.env.E2E_USERNAME ?? 'admin',
+    adminPassword: process.env.E2E_PASSWORD ?? 'admin',
+    username: process.env.E2E_USERNAME ?? 'user',
+    password: process.env.E2E_PASSWORD ?? 'user',
   };
 }
 
 /**
- * Login via API and return storage state for session reuse.
+ * Perform authenticated API request.
+ * Translates Cypress.Commands.add('authenticatedRequest', ...)
  */
-export async function login(request: APIRequestContext, username: string, password: string): Promise<string> {
-  // First hit /api/account to initialize the session
-  await request.get('/api/account', { failOnStatusCode: false });
-
-  const response = await request.post('<%= authenticationUrl ?? "/api/authenticate" %>', {
-    data: { username, password },
-  });
-
-  const body = await response.json();
-<%_ if (clientFrameworkVue) { _%>
-  // Vue stores JWT as raw string
-  return body.id_token;
+export async function authenticatedRequest(
+  request: APIRequestContext,
+  data: { method?: string; url: string; data?: unknown },
+) {
+<%_ if (authenticationTypeJwt) { _%>
+  // JWT authentication: retrieve token from stored state
+  const token = process.env.__JWT_TOKEN__;
+  if (token) {
+    return request.fetch(data.url, {
+      method: data.method ?? 'GET',
+      data: data.data,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
 <%_ } else { _%>
-  return body.id_token;
+  // Session/CSRF authentication
+  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
 <%_ } _%>
 }
 
 /**
- * Make an authenticated API request.
+ * Login and set up session.
+ * Translates Cypress.Commands.add('login', ...)
  */
-export async function authenticatedRequest(
-  request: APIRequestContext,
-  options: {
-    method?: string;
-    url: string;
-    data?: unknown;
-  },
-) {
-  const { method = 'GET', url, data } = options;
-
-  // Get token from storage state (set during login)
-  const token = process.env.__JWT_TOKEN__;
-
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  if (method === 'GET') {
-    return request.get(url, { headers });
-  } else if (method === 'POST') {
-    return request.post(url, { headers, data });
-  } else if (method === 'PUT') {
-    return request.put(url, { headers, data });
-  } else if (method === 'DELETE') {
-    return request.delete(url, { headers });
-  }
-
-  return request.get(url, { headers });
+export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
+<%_ if (authenticationTypeOauth2) { _%>
+  // OAuth2 login via Keycloak
+  await page.goto('/oauth2/authorization/oidc');
+  await page.waitForSelector('#kc-form-login', { timeout: 15000 });
+  await page.locator('#username').fill(username);
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await page.waitForURL('**/', { timeout: 15000 });
+<%_ } else { _%>
+  // JWT/Session login via API
+  await request.get('/api/account', { failOnStatusCode: false });
+  const response = await request.post('/api/authenticate', {
+    data: { username, password },
+  <%_ if (authenticationTypeSession) { _%>
+    form: true,
+  <%_ } _%>
+  });
+  <%_ if (!authenticationTypeSession) { _%>
+  const { id_token } = await response.json();
+  // Store token in session storage for the page
+  await page.goto('/');
+  await page.evaluate((token) => {
+    <%_ if (clientFrameworkVue) { _%>
+    sessionStorage.setItem('jhi-authenticationToken', token);
+    <%_ } else { _%>
+    sessionStorage.setItem('jhi-authenticationToken', JSON.stringify(token));
+    <%_ } _%>
+  }, id_token);
+  <%_ } _%>
+<%_ } _%>
 }

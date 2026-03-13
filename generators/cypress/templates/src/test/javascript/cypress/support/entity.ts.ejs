@@ -1,6 +1,8 @@
 /**
  * Playwright entity helpers
- * Translated from Cypress entity.ts
+ * Translated from Cypress entity.ts (v9)
+ *
+ * Source: ZERO EJS variables — pure static translation.
  */
 import type { Page, Locator } from '@playwright/test';
 import * as path from 'path';
@@ -14,7 +16,7 @@ export const entityTableSelector = '[data-cy="entityTable"]';
 export const entityCreateButtonSelector = '[data-cy="entityCreateButton"]';
 export const entityCreateSaveButtonSelector = '[data-cy="entityCreateSaveButton"]';
 export const entityCreateCancelButtonSelector = '[data-cy="entityCreateCancelButton"]';
-export const entityDetailsButtonSelector = '[data-cy="entityDetailsButton"]';
+export const entityDetailsButtonSelector = '[data-cy="entityDetailsButton"]'; // can return multiple elements
 export const entityDetailsBackButtonSelector = '[data-cy="entityDetailsBackButton"]';
 export const entityEditButtonSelector = '[data-cy="entityEditButton"]';
 export const entityDeleteButtonSelector = '[data-cy="entityDeleteButton"]';
@@ -24,25 +26,25 @@ export const entityConfirmDeleteButtonSelector = '[data-cy="entityConfirmDeleteB
 // End Specific Selector Attributes
 // ***********************************************
 
-export async function getEntityHeading(page: Page, entityName: string): Promise<Locator> {
+export function getEntityHeading(page: Page, entityName: string): Locator {
   return page.locator(`[data-cy="${entityName}Heading"]`);
 }
 
-export async function getEntityCreateUpdateHeading(page: Page, entityName: string): Promise<Locator> {
+export function getEntityCreateUpdateHeading(page: Page, entityName: string): Locator {
   return page.locator(`[data-cy="${entityName}CreateUpdateHeading"]`);
 }
 
-export async function getEntityDetailsHeading(page: Page, entityInstanceName: string): Promise<Locator> {
+export function getEntityDetailsHeading(page: Page, entityInstanceName: string): Locator {
   return page.locator(`[data-cy="${entityInstanceName}DetailsHeading"]`);
 }
 
-export async function getEntityDeleteDialogHeading(page: Page, entityInstanceName: string): Promise<Locator> {
+export function getEntityDeleteDialogHeading(page: Page, entityInstanceName: string): Locator {
   return page.locator(`[data-cy="${entityInstanceName}DeleteDialogHeading"]`);
 }
 
 /**
  * Upload a binary file to an image field.
- * Replaces Cypress's DataTransfer hack with Playwright's native setInputFiles.
+ * Translates Cypress's DataTransfer hack → Playwright's native setInputFiles.
  */
 export async function setFieldImageAsBytesOfEntity(
   page: Page,
@@ -56,6 +58,7 @@ export async function setFieldImageAsBytesOfEntity(
 
 /**
  * Select the last option in a select field.
+ * Translates Cypress setFieldSelectToLastOfEntity.
  */
 export async function setFieldSelectToLastOfEntity(page: Page, fieldName: string): Promise<void> {
   const select = page.locator(`[data-cy="${fieldName}"]`);

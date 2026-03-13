@@ -1,3 +1,7 @@
+<%#
+  Source EJS variables: clientFrameworkReact, clientFrameworkAngular, clientFrameworkVue, faker
+-%>
+<% const registerPage = clientFrameworkVue ? '/register' : '/account/register'; _%>
 import { test, expect } from '@playwright/test';
 import {
   usernameRegisterSelector,
@@ -10,69 +14,105 @@ import {
 } from '../../support/commands';
 import { clickOnRegisterItem } from '../../support/navbar';
 
-test.describe('register page', () => {
+test.describe('<%= registerPage %>', () => {
   test.beforeEach(async ({ page }) => {
+    await page.goto('<%= registerPage %>');
+  });
+
+  test('should be accessible through menu', async ({ page }) => {
     await page.goto('/');
     await clickOnRegisterItem(page);
+    await expect(page).toHaveURL(/<%= registerPage.replace(/\//g, '\\/') %>$/);
   });
 
   test('should load the register page', async ({ page }) => {
-<%_ if (clientFrameworkVue) { _%>
-    await expect(page).toHaveURL(/\/register/);
-<%_ } else { _%>
-    await expect(page).toHaveURL(/\/account\/register/);
-<%_ } _%>
+    await expect(page.locator(submitRegisterSelector)).toBeVisible();
   });
 
   test('requires username', async ({ page }) => {
-<%_ if (clientFrameworkReact) { _%>
+    <%_ if (clientFrameworkReact) { _%>
     await page.locator(submitRegisterSelector).click();
-<%_ } _%>
+    <%_ } _%>
     await expect(page.locator(usernameRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(usernameRegisterSelector).fill('test');
+    await page.locator(usernameRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(usernameRegisterSelector)).toHaveClass(new RegExp(classValid));
   });
 
-  test('requires email', async ({ page }) => {
-<%_ if (clientFrameworkReact) { _%>
+  test('should not accept invalid email', async ({ page }) => {
+    <%_ if (clientFrameworkReact) { _%>
     await page.locator(submitRegisterSelector).click();
-<%_ } _%>
+    <%_ } _%>
+    await expect(page.locator(emailRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(emailRegisterSelector).fill('testtest.fr');
+    await page.locator(emailRegisterSelector).evaluate(e => e.blur());
     await expect(page.locator(emailRegisterSelector)).toHaveClass(new RegExp(classInvalid));
   });
 
-  test('requires email in valid format', async ({ page }) => {
-    await page.locator(emailRegisterSelector).fill('notvalid');
-<%_ if (clientFrameworkReact) { _%>
+  test('requires email in correct format', async ({ page }) => {
+    <%_ if (clientFrameworkReact) { _%>
     await page.locator(submitRegisterSelector).click();
-<%_ } _%>
+    <%_ } _%>
     await expect(page.locator(emailRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(emailRegisterSelector).fill('test@test.fr');
+    await page.locator(emailRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(emailRegisterSelector)).toHaveClass(new RegExp(classValid));
   });
 
   test('requires first password', async ({ page }) => {
-<%_ if (clientFrameworkReact) { _%>
+    <%_ if (clientFrameworkReact) { _%>
     await page.locator(submitRegisterSelector).click();
-<%_ } _%>
+    <%_ } _%>
     await expect(page.locator(firstPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(firstPasswordRegisterSelector).fill('test@test.fr');
+    await page.locator(firstPasswordRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(firstPasswordRegisterSelector)).toHaveClass(new RegExp(classValid));
   });
 
   test('requires password and confirm password to be same', async ({ page }) => {
-    await page.locator(firstPasswordRegisterSelector).fill('password');
-    await page.locator(secondPasswordRegisterSelector).fill('confirmpassword');
-<%_ if (clientFrameworkReact) { _%>
+    <%_ if (clientFrameworkReact) { _%>
     await page.locator(submitRegisterSelector).click();
-<%_ } _%>
+    <%_ } _%>
+    await expect(page.locator(firstPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(firstPasswordRegisterSelector).fill('test');
+    await page.locator(firstPasswordRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(firstPasswordRegisterSelector)).toHaveClass(new RegExp(classValid));
     await expect(page.locator(secondPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(secondPasswordRegisterSelector).fill('test');
+    await page.locator(secondPasswordRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(secondPasswordRegisterSelector)).toHaveClass(new RegExp(classValid));
+  });
+
+  test('requires password and confirm password have not the same value', async ({ page }) => {
+    <%_ if (clientFrameworkReact) { _%>
+    await page.locator(submitRegisterSelector).click();
+    <%_ } _%>
+    await expect(page.locator(firstPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(firstPasswordRegisterSelector).fill('test');
+    await page.locator(firstPasswordRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(firstPasswordRegisterSelector)).toHaveClass(new RegExp(classValid));
+<%_ if (clientFrameworkAngular) { _%>
+    await expect(page.locator(secondPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(secondPasswordRegisterSelector).fill('otherPassword');
+    await expect(page.locator(submitRegisterSelector)).toBeDisabled();
+<%_ } else { _%>
+    await expect(page.locator(secondPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+    await page.locator(secondPasswordRegisterSelector).fill('otherPassword');
+    await page.locator(secondPasswordRegisterSelector).evaluate(e => e.blur());
+    await expect(page.locator(secondPasswordRegisterSelector)).toHaveClass(new RegExp(classInvalid));
+<%_ } _%>
   });
 
   test('register a valid user', async ({ page }) => {
-    const randomSuffix = Math.floor(Math.random() * 1000000);
-    await page.locator(usernameRegisterSelector).fill(`testuser${randomSuffix}`);
-    await page.locator(emailRegisterSelector).fill(`testuser${randomSuffix}@localhost`);
-    await page.locator(firstPasswordRegisterSelector).fill('password123');
-    await page.locator(secondPasswordRegisterSelector).fill('password123');
-<%_ if (clientFrameworkAngular) { _%>
-    await expect(page.locator(submitRegisterSelector)).toBeEnabled();
-<%_ } _%>
+    const randomEmail = '<%= faker.internet.email() %>';
+    const randomUsername = '<%= faker.internet.username() %>';
+    await page.locator(usernameRegisterSelector).fill(randomUsername);
+    await page.locator(emailRegisterSelector).fill(randomEmail);
+    await page.locator(firstPasswordRegisterSelector).fill('jondoe');
+    await page.locator(secondPasswordRegisterSelector).fill('jondoe');
+    const responsePromise = page.waitForResponse('**/api/register');
     await page.locator(submitRegisterSelector).click();
-    // registration successful message should appear
-    await expect(page.locator('.alert-success')).toBeVisible({ timeout: 10000 });
+    const response = await responsePromise;
+    expect(response.status()).toBe(201);
   });
 });

@@ -1,5 +1,21 @@
 import BaseApplicationGenerator from 'generator-jhipster/generators/base-application';
+import { createFaker } from 'generator-jhipster/generators/base-application/support';
+import { generateTestEntity } from 'generator-jhipster/generators/client/support';
 import { playwrightFiles, entityPlaywrightFiles } from './files.js';
+
+/**
+ * Simple Java-style string hash code (same as JHipster internal stringHashCode).
+ * Used to seed faker for reproducible test data.
+ */
+function stringHashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0; // Convert to 32-bit integer
+  }
+  return hash;
+}
 
 export default class extends BaseApplicationGenerator {
   constructor(args, opts, features) {
@@ -14,6 +30,21 @@ export default class extends BaseApplicationGenerator {
     return this.asPreparingTaskGroup({
       setPlaywrightProperties({ application }) {
         application.playwrightDir = `${application.clientTestDir}playwright/`;
+        // Set Cypress-specific defaults expected by entity template
+        // (normally set by the Cypress generator's PREPARING phase)
+        application.cypressBootstrapEntities ??= true;
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
+    return this.asPreparingEachEntityTaskGroup({
+      prepareEntityForTemplates({ entity }) {
+        // Set entity-level defaults expected by entity test template
+        // (normally set by Cypress generator's POST_PREPARING_EACH_ENTITY phase)
+        entity.workaroundEntityCannotBeEmpty ??= false;
+        entity.workaroundInstantReactiveMariaDB ??= false;
+        entity.generateEntityCypress ??= !entity.skipClient || entity.builtInUserManagement;
       },
     });
   }
@@ -21,9 +52,12 @@ export default class extends BaseApplicationGenerator {
   get [BaseApplicationGenerator.WRITING]() {
     return this.asWritingTaskGroup({
       async writePlaywrightFiles({ application }) {
+        const faker = await createFaker();
+        faker.seed(stringHashCode(application.baseName));
+        const context = { ...application, faker };
         await this.writeFiles({
           sections: playwrightFiles,
-          context: application,
+          context,
         });
       },
     });
@@ -33,11 +67,12 @@ export default class extends BaseApplicationGenerator {
     return this.asWritingEntitiesTaskGroup({
       async writeEntityPlaywrightFiles({ application, entities }) {
         for (const entity of entities.filter(
-          e => !e.builtIn && !e.embedded && !e.entityClientModelOnly
+          e => !e.builtInUser && !e.embedded && !e.entityClientModelOnly
         )) {
+          const context = { ...application, ...entity };
           await this.writeFiles({
             sections: entityPlaywrightFiles,
-            context: { ...application, ...entity },
+            context,
           });
         }
       },
@@ -61,5 +96,9 @@ export default class extends BaseApplicationGenerator {
         scriptsStorage.set('e2e:headless', 'npx playwright test');
       },
     });
+  }
+
+  generateTestEntity(fields) {
+    return generateTestEntity(fields);
   }
 }

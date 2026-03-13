@@ -1,59 +1,74 @@
+<%#
+  Source EJS variables: withAdminUi, communicationSpringWebsocket
+-%>
 import { test, expect } from '@playwright/test';
 import {
+<%_ if (withAdminUi) { _%>
   metricsPageHeadingSelector,
   healthPageHeadingSelector,
   logsPageHeadingSelector,
   configurationPageHeadingSelector,
-  swaggerFrameSelector,
+<%_ } _%>
   swaggerPageSelector,
+  swaggerFrameSelector,
   credentials,
 } from '../../support/commands';
-import { clickOnLoginItem, clickOnAdminMenuItem } from '../../support/navbar';
+import { login } from '../../support/commands';
+import { clickOnAdminMenuItem } from '../../support/navbar';
+import { getManagementInfo } from '../../support/management';
 
-test.describe('administration', () => {
-  let username: string;
-  let password: string;
+test.describe('/admin', () => {
+  let adminUsername: string;
+  let adminPassword: string;
 
   test.beforeAll(() => {
     const creds = credentials();
-    username = creds.adminUsername;
-    password = creds.adminPassword;
+    adminUsername = creds.adminUsername;
+    adminPassword = creds.adminPassword;
   });
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    await login(page, request, adminUsername, adminPassword);
     await page.goto('/');
-    await clickOnLoginItem(page);
-    await page.locator('[data-cy="username"]').fill(username);
-    await page.locator('[data-cy="password"]').fill(password);
-    await page.locator('[data-cy="submit"]').click();
-    await page.waitForURL('**/');
   });
-<%_ if (withAdminUi) { _%>
 
+<%_ if (withAdminUi) { _%>
   test('should load metrics', async ({ page }) => {
-    await clickOnAdminMenuItem(page, 'metrics');
-    await expect(page.locator(metricsPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+    await clickOnAdminMenuItem(page, 'admin/metrics');
+    await expect(page.locator(metricsPageHeadingSelector)).toBeVisible();
   });
 
   test('should load health', async ({ page }) => {
-    await clickOnAdminMenuItem(page, 'health');
-    await expect(page.locator(healthPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+    await clickOnAdminMenuItem(page, 'admin/health');
+    await expect(page.locator(healthPageHeadingSelector)).toBeVisible();
   });
 
   test('should load logs', async ({ page }) => {
-    await clickOnAdminMenuItem(page, 'logs');
-    await expect(page.locator(logsPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+    await clickOnAdminMenuItem(page, 'admin/logs');
+    await expect(page.locator(logsPageHeadingSelector)).toBeVisible();
   });
 
   test('should load configuration', async ({ page }) => {
-    await clickOnAdminMenuItem(page, 'configuration');
-    await expect(page.locator(configurationPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+    await clickOnAdminMenuItem(page, 'admin/configuration');
+    await expect(page.locator(configurationPageHeadingSelector)).toBeVisible();
   });
 
-  test('should load swagger', async ({ page }) => {
-    await clickOnAdminMenuItem(page, 'docs');
-    const frame = page.frameLocator(swaggerFrameSelector);
-    await expect(frame.locator(swaggerPageSelector)).toBeVisible({ timeout: 30000 });
+<%_ } _%>
+  test('should load swagger', async ({ page, request }) => {
+    const info = await getManagementInfo(request);
+    if (info.activeProfiles && info.activeProfiles.includes('api-docs')) {
+      await clickOnAdminMenuItem(page, 'admin/docs');
+      await expect(page.locator(swaggerFrameSelector)).toBeVisible();
+      // Use frameLocator for iframe content
+      const frame = page.frameLocator(swaggerFrameSelector);
+      await expect(frame.locator(swaggerPageSelector)).toBeVisible({ timeout: 15000 });
+    }
+  });
+<%_ if (communicationSpringWebsocket) { _%>
+
+  test('should load tracker', async ({ page }) => {
+    await clickOnAdminMenuItem(page, 'admin/tracker');
+    await expect(page.locator('[data-cy="trackerPageHeading"]')).toBeVisible();
   });
 <%_ } _%>
 });

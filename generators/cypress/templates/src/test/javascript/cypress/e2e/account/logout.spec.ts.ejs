@@ -1,6 +1,15 @@
+<%#
+  Source EJS variables: authenticationUsesCsrf
+-%>
 import { test, expect } from '@playwright/test';
-import { credentials } from '../../support/commands';
-import { clickOnLoginItem, clickOnLogoutItem } from '../../support/navbar';
+import {
+  accountMenuSelector,
+  navbarSelector,
+  loginItemSelector,
+  credentials,
+} from '../../support/commands';
+import { clickOnLogoutItem } from '../../support/navbar';
+import { login } from '../../support/commands';
 
 test.describe('logout', () => {
   let username: string;
@@ -8,19 +17,22 @@ test.describe('logout', () => {
 
   test.beforeAll(() => {
     const creds = credentials();
-    username = creds.adminUsername;
-    password = creds.adminPassword;
+    username = creds.username;
+    password = creds.password;
   });
 
-  test('go to home page when successfully logs out', async ({ page }) => {
+  test('go to home page when successfully logs out', async ({ page, request }) => {
+    await login(page, request, username, password);
     await page.goto('/');
-    await clickOnLoginItem(page);
-    await page.locator('[data-cy="username"]').fill(username);
-    await page.locator('[data-cy="password"]').fill(password);
-    await page.locator('[data-cy="submit"]').click();
-    await page.waitForURL('**/');
+
     await clickOnLogoutItem(page);
-    // Should be redirected to home or login
-    await expect(page).toHaveURL(/\//);
+
+<%_ if (authenticationUsesCsrf) { _%>
+    // Wait for CSRF logout POST
+    await page.waitForResponse('**/api/logout');
+<%_ } _%>
+    await expect(
+      page.locator(navbarSelector).locator(accountMenuSelector).locator(loginItemSelector)
+    ).toBeVisible();
   });
 });

@@ -1,54 +1,89 @@
+<%#
+  Source EJS variables: ZERO — settings-page.cy.ts.ejs has no EJS variables.
+-%>
 import { test, expect } from '@playwright/test';
 import {
   firstNameSettingsSelector,
   lastNameSettingsSelector,
-  emailSettingsSelector,
   submitSettingsSelector,
+  emailSettingsSelector,
   credentials,
 } from '../../support/commands';
-import { clickOnLoginItem, clickOnSettingsItem } from '../../support/navbar';
+import { login } from '../../support/commands';
+import { clickOnSettingsItem } from '../../support/navbar';
+import type { Account } from '../../support/account';
 import { getAccount, saveAccount } from '../../support/account';
 
-test.describe('settings page', () => {
+test.describe('/account/settings', () => {
+  let adminUsername: string;
+  let adminPassword: string;
   let username: string;
   let password: string;
-  let originalAccount: Record<string, unknown>;
+
+  const testUserEmail = 'user@localhost.fr';
+  let originalUserAccount: Account;
+  let testUserAccount: Account;
 
   test.beforeAll(async ({ request }) => {
     const creds = credentials();
-    username = creds.adminUsername;
-    password = creds.adminPassword;
+    ({ adminUsername, adminPassword, username, password } = creds);
+  });
 
-    // Save original account settings to restore later
-    const response = await request.get('/api/account');
-    if (response.ok()) {
-      originalAccount = await response.json();
-    }
+  test.beforeEach(async ({ page, request }) => {
+    await login(page, request, username, password);
+
+    const account = await getAccount(request);
+    originalUserAccount = account;
+    testUserAccount = { ...account, email: testUserEmail };
+    const saveResponse = await saveAccount(request, testUserAccount);
+    expect(saveResponse.status()).toBe(200);
+
+    await page.goto('/account/settings');
+    await expect(page.locator(emailSettingsSelector)).toHaveValue(testUserEmail);
+  });
+
+  test.afterEach(async ({ request }) => {
+    await saveAccount(request, testUserAccount);
   });
 
   test.afterAll(async ({ request }) => {
-    // Restore original settings
-    if (originalAccount) {
-      await saveAccount(request, originalAccount);
+    if (originalUserAccount) {
+      await saveAccount(request, originalUserAccount);
     }
   });
 
-  test.beforeEach(async ({ page }) => {
+  test('should be accessible through menu', async ({ page }) => {
     await page.goto('/');
-    await clickOnLoginItem(page);
-    await page.locator('[data-cy="username"]').fill(username);
-    await page.locator('[data-cy="password"]').fill(password);
-    await page.locator('[data-cy="submit"]').click();
-    await page.waitForURL('**/');
     await clickOnSettingsItem(page);
+    await expect(page).toHaveURL(/\/account\/settings$/);
   });
 
-  test('should be able to update settings', async ({ page }) => {
+  test("should be able to change 'user' firstname settings", async ({ page }) => {
     await page.locator(firstNameSettingsSelector).clear();
-    await page.locator(firstNameSettingsSelector).fill('PlaywrightFirstName');
-    await page.locator(lastNameSettingsSelector).clear();
-    await page.locator(lastNameSettingsSelector).fill('PlaywrightLastName');
+    await page.locator(firstNameSettingsSelector).fill('jhipster');
+    const responsePromise = page.waitForResponse('**/api/account');
     await page.locator(submitSettingsSelector).click();
-    await expect(page.locator('.alert-success')).toBeVisible({ timeout: 10000 });
+    const response = await responsePromise;
+    expect(response.status()).toBe(200);
+  });
+
+  test("should be able to change 'user' lastname settings", async ({ page }) => {
+    await page.locator(lastNameSettingsSelector).clear();
+    await page.locator(firstNameSettingsSelector).fill('jhipster');
+    await page.locator(lastNameSettingsSelector).fill('retspihj');
+    const responsePromise = page.waitForResponse('**/api/account');
+    await page.locator(submitSettingsSelector).click();
+    const response = await responsePromise;
+    expect(response.status()).toBe(200);
+  });
+
+  test("should be able to change 'user' email settings", async ({ page }) => {
+    await page.locator(emailSettingsSelector).clear();
+    await page.locator(firstNameSettingsSelector).fill('jhipster');
+    await page.locator(emailSettingsSelector).fill('user@localhost.fr');
+    const responsePromise = page.waitForResponse('**/api/account');
+    await page.locator(submitSettingsSelector).click();
+    const response = await responsePromise;
+    expect(response.status()).toBe(200);
   });
 });

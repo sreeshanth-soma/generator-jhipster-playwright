@@ -1,13 +1,26 @@
 /**
  * Playwright account helpers
- * Translated from Cypress account.ts
+ * Translated from Cypress account.ts (v9)
+ *
+ * Source: ZERO EJS variables — pure static translation.
  */
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { authenticatedRequest } from './commands';
 
-export async function getAccount(request: APIRequestContext) {
-  return request.get('/api/account');
+export type Account = Record<string, string | boolean | number>;
+
+export async function getAccount(request: APIRequestContext): Promise<Account> {
+  const response = await authenticatedRequest(request, {
+    method: 'GET',
+    url: '/api/account',
+  });
+  return response.json() as Promise<Account>;
 }
 
-export async function saveAccount(request: APIRequestContext, account: Record<string, unknown>) {
-  return request.post('/api/account', { data: account });
+export async function saveAccount(request: APIRequestContext, account: Account): Promise<APIResponse> {
+  return authenticatedRequest(request, {
+    method: 'POST',
+    url: '/api/account',
+    data: account,
+  });
 }
