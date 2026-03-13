@@ -8,7 +8,7 @@
  *   - clientFrameworkAngular, clientFrameworkReact, clientFrameworkVue
  */
 import type { Page, APIRequestContext, APIResponse } from '@playwright/test';
-import { request as pwRequest } from '@playwright/test';
+import { expect, request as pwRequest } from '@playwright/test';
 
 // ***********************************************
 // Begin Specific Selector Attributes
@@ -83,6 +83,10 @@ export interface Credentials {
   password: string;
 }
 
+async function waitForAppShell(page: Page): Promise<void> {
+  await expect(page.locator(navbarSelector)).toBeVisible();
+}
+
 /**
  * Get test credentials from environment or defaults.
  */
@@ -137,16 +141,15 @@ export async function authenticatedRequest(
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
   const token = await getAuthToken(request, username, password);
   _jwtToken = token;
-  // Navigate to the app, inject the token into sessionStorage, then reload to apply
-  await page.goto('/');
-  await page.evaluate((t) => {
+  await page.addInitScript((t) => {
 <%_ if (clientFrameworkVue) { _%>
     sessionStorage.setItem('jhi-authenticationToken', t);
 <%_ } else { _%>
     sessionStorage.setItem('jhi-authenticationToken', JSON.stringify(t));
 <%_ } _%>
   }, token);
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.goto('/');
+  await waitForAppShell(page);
 }
 <%_ } else if (authenticationTypeOauth2) { _%>
 /**
@@ -169,6 +172,7 @@ export async function login(page: Page, request: APIRequestContext, username: st
   await page.locator('#password').fill(password);
   await page.locator('#kc-login').click();
   await page.waitForURL('**/', { timeout: 15000 });
+  await waitForAppShell(page);
 }
 <%_ } else { _%>
 /**
@@ -190,5 +194,6 @@ export async function login(page: Page, request: APIRequestContext, username: st
     form: true,
   });
   await page.goto('/');
+  await waitForAppShell(page);
 }
 <%_ } _%>
