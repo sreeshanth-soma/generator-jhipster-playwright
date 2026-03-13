@@ -1,0 +1,56 @@
+/**
+ * Playwright navbar helpers
+ * Translated from Cypress navbar.ts
+ */
+import type { Page } from '@playwright/test';
+import {
+  accountMenuSelector,
+  adminMenuSelector,
+  entityItemSelector,
+  loginItemSelector,
+  logoutItemSelector,
+  navbarSelector,
+  passwordItemSelector,
+  registerItemSelector,
+  settingsItemSelector,
+} from './commands';
+
+export async function clickOnLoginItem(page: Page): Promise<void> {
+  await page.locator(navbarSelector).locator(accountMenuSelector).click();
+  await page.locator(navbarSelector).locator(accountMenuSelector).locator(loginItemSelector).click();
+}
+
+export async function clickOnLogoutItem(page: Page): Promise<void> {
+  await page.locator(navbarSelector).locator(accountMenuSelector).click();
+  await page.locator(navbarSelector).locator(accountMenuSelector).locator(logoutItemSelector).click();
+}
+
+export async function clickOnRegisterItem(page: Page): Promise<void> {
+  await page.locator(navbarSelector).locator(accountMenuSelector).click();
+  await page.locator(navbarSelector).locator(accountMenuSelector).locator(registerItemSelector).click();
+}
+
+export async function clickOnSettingsItem(page: Page): Promise<void> {
+  await page.locator(navbarSelector).locator(accountMenuSelector).click();
+  await page.locator(navbarSelector).locator(accountMenuSelector).locator(settingsItemSelector).click();
+}
+
+export async function clickOnPasswordItem(page: Page): Promise<void> {
+  await page.locator(navbarSelector).locator(accountMenuSelector).click();
+  await page.locator(navbarSelector).locator(accountMenuSelector).locator(passwordItemSelector).click();
+}
+
+export async function clickOnAdminMenuItem(page: Page, item: string): Promise<void> {
+  await page.locator(navbarSelector).locator(adminMenuSelector).click();
+  await page.locator(navbarSelector).locator(adminMenuSelector).locator(`.dropdown-item[href="/${item}"]`).click();
+}
+
+export async function clickOnEntityMenuItem(page: Page, entityName: string): Promise<void> {
+<%_ if (clientFrameworkAngular) { _%>
+  await page.locator(navbarSelector).locator(entityItemSelector).click({ force: true });
+  await page.locator(navbarSelector).locator(entityItemSelector).locator(`.dropdown-item[href="/${entityName}"]`).click({ force: true });
+<%_ } else { _%>
+  await page.locator(navbarSelector).locator(entityItemSelector).click();
+  await page.locator(navbarSelector).locator(entityItemSelector).locator(`.dropdown-item[href="/${entityName}"]`).click();
+<%_ } _%>
+}

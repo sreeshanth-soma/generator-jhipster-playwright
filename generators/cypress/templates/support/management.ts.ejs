@@ -1,0 +1,13 @@
+/**
+ * Playwright management helpers
+ * Translated from Cypress management.ts
+ */
+import type { APIRequestContext } from '@playwright/test';
+
+export async function getManagementInfo(request: APIRequestContext) {
+  return request.get('/management/info');
+}
+
+export async function getHealthStatus(request: APIRequestContext) {
+  return request.get('/management/health');
+}

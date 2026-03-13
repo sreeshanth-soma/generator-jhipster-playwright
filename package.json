@@ -1,0 +1,44 @@
+{
+  "name": "generator-jhipster-playwright",
+  "version": "1.0.0",
+  "description": "JHipster Playwright E2E blueprint - replaces Cypress with Playwright for end-to-end testing",
+  "keywords": [
+    "yeoman-generator",
+    "jhipster-blueprint",
+    "jhipster-9"
+  ],
+  "homepage": "https://github.com/sreeshanth-soma/generator-jhipster-playwright",
+  "bugs": "https://github.com/sreeshanth-soma/generator-jhipster-playwright/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sreeshanth-soma/generator-jhipster-playwright.git"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "jhipster-playwright": "cli/cli.cjs"
+  },
+  "files": [
+    "cli",
+    "generators",
+    "!**/__*",
+    "!**/*.snap",
+    "!**/*.spec.?(c|m)js"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "generator-jhipster": "9.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "vitest": "3.1.3",
+    "yeoman-test": ">=8.2.0"
+  },
+  "engines": {
+    "generator-jhipster": "9.0.0",
+    "node": ">= 22"
+  }
+}

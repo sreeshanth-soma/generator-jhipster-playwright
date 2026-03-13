@@ -1,0 +1,13 @@
+/**
+ * Playwright account helpers
+ * Translated from Cypress account.ts
+ */
+import type { APIRequestContext } from '@playwright/test';
+
+export async function getAccount(request: APIRequestContext) {
+  return request.get('/api/account');
+}
+
+export async function saveAccount(request: APIRequestContext, account: Record<string, unknown>) {
+  return request.post('/api/account', { data: account });
+}
