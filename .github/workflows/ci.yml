@@ -73,7 +73,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download packaged blueprint
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: blueprint-package
           path: ${{ runner.temp }}/blueprint-package
@@ -89,6 +89,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: maven
 
       - name: Install JHipster CLI and packaged blueprint
         run: |
