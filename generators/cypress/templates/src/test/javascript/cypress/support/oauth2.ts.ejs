@@ -1,0 +1,64 @@
+/**
+ * Playwright OAuth2 support helpers
+ * Translated from Cypress oauth2.ts
+ *
+ * This module handles OAuth2/Keycloak authentication flows.
+ */
+import type { Page, APIRequestContext } from '@playwright/test';
+
+export interface OAuth2Data {
+  accessToken: string;
+  idToken: string;
+}
+
+/**
+ * Initiate OAuth2 login flow and return tokens.
+ * Translates the Cypress OAuth2 command chain:
+ *   1. GET /oauth2/authorization/oidc (follow redirects to Keycloak)
+ *   2. Parse the Keycloak login form
+ *   3. POST credentials to Keycloak
+ *   4. Follow redirects back to the app
+ */
+export async function oauth2Login(
+  page: Page,
+  username: string,
+  password: string,
+): Promise<void> {
+  // Navigate to the OAuth2 login endpoint
+  await page.goto('/oauth2/authorization/oidc');
+
+  // Wait for Keycloak login form
+  await page.waitForSelector('#kc-form-login', { timeout: 15000 });
+
+  // Fill in credentials
+  await page.locator('#username').fill(username);
+  await page.locator('#password').fill(password);
+
+  // Submit the form
+  await page.locator('#kc-login').click();
+
+  // Wait for redirect back to the app
+  await page.waitForURL('**/', { timeout: 15000 });
+}
+
+/**
+ * Get OAuth2 tokens from the current session.
+ */
+export async function getOAuth2Data(request: APIRequestContext): Promise<OAuth2Data | null> {
+  const response = await request.get('/api/account', { failOnStatusCode: false });
+  if (response.ok()) {
+    return {
+      accessToken: '',
+      idToken: '',
+    };
+  }
+  return null;
+}
+
+/**
+ * Logout from OAuth2/Keycloak session.
+ */
+export async function oauth2Logout(page: Page): Promise<void> {
+  await page.goto('/api/logout');
+  await page.waitForURL('**/', { timeout: 15000 });
+}

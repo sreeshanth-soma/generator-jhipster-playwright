@@ -1,66 +1,65 @@
 /**
  * Playwright template file mappings.
- * Mirrors the Cypress files.ts structure from generator-jhipster.
+ * Mirrors the Cypress files.ts structure from generator-jhipster v9.
+ *
+ * Pattern from Cypress:
+ *   path: source template directory (relative to templates/)
+ *   renameTo: (ctx, file) => output path in generated app
+ *   templates: ['filename'] — JHipster auto-appends .ejs
  */
+
+const PLAYWRIGHT_TEMPLATE_SOURCE_DIR = 'src/test/javascript/cypress/';
+
 export const playwrightFiles = {
   common: [
     {
-      templates: ['playwright.config.ts.ejs'],
+      templates: ['playwright.config.ts'],
     },
+  ],
+  clientTestFw: [
     {
-      path: ctx => `${ctx.clientTestDir}playwright/`,
-      templates: ['tsconfig.json'],
-    },
-    {
-      path: ctx => `${ctx.clientTestDir}playwright/`,
+      path: PLAYWRIGHT_TEMPLATE_SOURCE_DIR,
+      renameTo: (ctx, file) => `${ctx.clientTestDir}playwright/${file}`,
       templates: [
+        'fixtures/integration-test.png',
+        'e2e/administration/administration.spec.ts',
         'support/commands.ts',
         'support/navbar.ts',
+        'support/index.ts',
         'support/entity.ts',
         'support/management.ts',
-        'support/index.ts',
+        'tsconfig.json',
       ],
     },
     {
-      path: ctx => `${ctx.clientTestDir}playwright/`,
-      condition: ctx => !ctx.authenticationTypeOauth2,
-      templates: ['support/account.ts'],
+      condition: generator => !generator.applicationTypeMicroservice,
+      path: PLAYWRIGHT_TEMPLATE_SOURCE_DIR,
+      renameTo: (ctx, file) => `${ctx.clientTestDir}playwright/${file}`,
+      templates: ['e2e/account/logout.spec.ts'],
     },
     {
-      path: ctx => `${ctx.clientTestDir}playwright/`,
-      condition: ctx => ctx.authenticationTypeOauth2,
-      templates: ['support/oauth2.ts'],
-    },
-  ],
-  e2eTests: [
-    {
-      path: ctx => `${ctx.clientTestDir}playwright/e2e/`,
-      condition: ctx => !ctx.authenticationTypeOauth2,
-      templates: ['account/login-page.spec.ts'],
+      condition: generator => !generator.authenticationTypeOauth2,
+      path: PLAYWRIGHT_TEMPLATE_SOURCE_DIR,
+      renameTo: (ctx, file) => `${ctx.clientTestDir}playwright/${file}`,
+      templates: ['e2e/account/login-page.spec.ts'],
     },
     {
-      path: ctx => `${ctx.clientTestDir}playwright/e2e/`,
-      templates: ['account/logout.spec.ts'],
-    },
-    {
-      path: ctx => `${ctx.clientTestDir}playwright/e2e/`,
-      condition: ctx => ctx.generateUserManagement,
+      condition: generator => Boolean(generator.generateUserManagement),
+      path: PLAYWRIGHT_TEMPLATE_SOURCE_DIR,
+      renameTo: (ctx, file) => `${ctx.clientTestDir}playwright/${file}`,
       templates: [
-        'account/register-page.spec.ts',
-        'account/settings-page.spec.ts',
-        'account/password-page.spec.ts',
-        'account/reset-password-page.spec.ts',
+        'e2e/account/register-page.spec.ts',
+        'e2e/account/settings-page.spec.ts',
+        'e2e/account/password-page.spec.ts',
+        'e2e/account/reset-password-page.spec.ts',
+        'support/account.ts',
       ],
     },
     {
-      path: ctx => `${ctx.clientTestDir}playwright/e2e/`,
-      templates: ['administration/administration.spec.ts'],
-    },
-  ],
-  fixtures: [
-    {
-      path: ctx => `${ctx.clientTestDir}playwright/`,
-      templates: [{ file: 'fixtures/integration-test.png', method: 'copy' }],
+      condition: generator => generator.authenticationTypeOauth2,
+      path: PLAYWRIGHT_TEMPLATE_SOURCE_DIR,
+      renameTo: (ctx, file) => `${ctx.clientTestDir}playwright/${file}`,
+      templates: ['support/oauth2.ts'],
     },
   ],
 };
@@ -68,8 +67,9 @@ export const playwrightFiles = {
 export const entityPlaywrightFiles = {
   tests: [
     {
-      path: ctx => `${ctx.clientTestDir}playwright/e2e/entity/`,
-      templates: ['_entity_.spec.ts'],
+      path: PLAYWRIGHT_TEMPLATE_SOURCE_DIR,
+      renameTo: ctx => `${ctx.clientTestDir}playwright/e2e/entity/${ctx.entityFileName}.spec.ts`,
+      templates: ['e2e/entity/_entity_.spec.ts'],
     },
   ],
 };

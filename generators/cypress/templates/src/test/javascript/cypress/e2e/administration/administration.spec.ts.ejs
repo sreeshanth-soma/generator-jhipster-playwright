@@ -1,0 +1,59 @@
+import { test, expect } from '@playwright/test';
+import {
+  metricsPageHeadingSelector,
+  healthPageHeadingSelector,
+  logsPageHeadingSelector,
+  configurationPageHeadingSelector,
+  swaggerFrameSelector,
+  swaggerPageSelector,
+  credentials,
+} from '../../support/commands';
+import { clickOnLoginItem, clickOnAdminMenuItem } from '../../support/navbar';
+
+test.describe('administration', () => {
+  let username: string;
+  let password: string;
+
+  test.beforeAll(() => {
+    const creds = credentials();
+    username = creds.adminUsername;
+    password = creds.adminPassword;
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await clickOnLoginItem(page);
+    await page.locator('[data-cy="username"]').fill(username);
+    await page.locator('[data-cy="password"]').fill(password);
+    await page.locator('[data-cy="submit"]').click();
+    await page.waitForURL('**/');
+  });
+<%_ if (withAdminUi) { _%>
+
+  test('should load metrics', async ({ page }) => {
+    await clickOnAdminMenuItem(page, 'metrics');
+    await expect(page.locator(metricsPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+  });
+
+  test('should load health', async ({ page }) => {
+    await clickOnAdminMenuItem(page, 'health');
+    await expect(page.locator(healthPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+  });
+
+  test('should load logs', async ({ page }) => {
+    await clickOnAdminMenuItem(page, 'logs');
+    await expect(page.locator(logsPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+  });
+
+  test('should load configuration', async ({ page }) => {
+    await clickOnAdminMenuItem(page, 'configuration');
+    await expect(page.locator(configurationPageHeadingSelector)).toBeVisible({ timeout: 15000 });
+  });
+
+  test('should load swagger', async ({ page }) => {
+    await clickOnAdminMenuItem(page, 'docs');
+    const frame = page.frameLocator(swaggerFrameSelector);
+    await expect(frame.locator(swaggerPageSelector)).toBeVisible({ timeout: 30000 });
+  });
+<%_ } _%>
+});

@@ -1,4 +1,5 @@
 import BaseApplicationGenerator from 'generator-jhipster/generators/base-application';
+import { playwrightFiles, entityPlaywrightFiles } from './files.js';
 
 export default class extends BaseApplicationGenerator {
   constructor(args, opts, features) {
@@ -12,7 +13,6 @@ export default class extends BaseApplicationGenerator {
   get [BaseApplicationGenerator.PREPARING]() {
     return this.asPreparingTaskGroup({
       setPlaywrightProperties({ application }) {
-        // Set the playwright directory path
         application.playwrightDir = `${application.clientTestDir}playwright/`;
       },
     });
@@ -21,17 +21,25 @@ export default class extends BaseApplicationGenerator {
   get [BaseApplicationGenerator.WRITING]() {
     return this.asWritingTaskGroup({
       async writePlaywrightFiles({ application }) {
-        // For now, just generate a minimal playwright.config.ts to prove the blueprint works
         await this.writeFiles({
-          sections: {
-            playwrightConfig: [
-              {
-                templates: ['playwright.config.ts'],
-              },
-            ],
-          },
+          sections: playwrightFiles,
           context: application,
         });
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.WRITING_ENTITIES]() {
+    return this.asWritingEntitiesTaskGroup({
+      async writeEntityPlaywrightFiles({ application, entities }) {
+        for (const entity of entities.filter(
+          e => !e.builtIn && !e.embedded && !e.entityClientModelOnly
+        )) {
+          await this.writeFiles({
+            sections: entityPlaywrightFiles,
+            context: { ...application, ...entity },
+          });
+        }
       },
     });
   }

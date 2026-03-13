@@ -1,0 +1,54 @@
+import { test, expect } from '@playwright/test';
+import {
+  firstNameSettingsSelector,
+  lastNameSettingsSelector,
+  emailSettingsSelector,
+  submitSettingsSelector,
+  credentials,
+} from '../../support/commands';
+import { clickOnLoginItem, clickOnSettingsItem } from '../../support/navbar';
+import { getAccount, saveAccount } from '../../support/account';
+
+test.describe('settings page', () => {
+  let username: string;
+  let password: string;
+  let originalAccount: Record<string, unknown>;
+
+  test.beforeAll(async ({ request }) => {
+    const creds = credentials();
+    username = creds.adminUsername;
+    password = creds.adminPassword;
+
+    // Save original account settings to restore later
+    const response = await request.get('/api/account');
+    if (response.ok()) {
+      originalAccount = await response.json();
+    }
+  });
+
+  test.afterAll(async ({ request }) => {
+    // Restore original settings
+    if (originalAccount) {
+      await saveAccount(request, originalAccount);
+    }
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await clickOnLoginItem(page);
+    await page.locator('[data-cy="username"]').fill(username);
+    await page.locator('[data-cy="password"]').fill(password);
+    await page.locator('[data-cy="submit"]').click();
+    await page.waitForURL('**/');
+    await clickOnSettingsItem(page);
+  });
+
+  test('should be able to update settings', async ({ page }) => {
+    await page.locator(firstNameSettingsSelector).clear();
+    await page.locator(firstNameSettingsSelector).fill('PlaywrightFirstName');
+    await page.locator(lastNameSettingsSelector).clear();
+    await page.locator(lastNameSettingsSelector).fill('PlaywrightLastName');
+    await page.locator(submitSettingsSelector).click();
+    await expect(page.locator('.alert-success')).toBeVisible({ timeout: 10000 });
+  });
+});

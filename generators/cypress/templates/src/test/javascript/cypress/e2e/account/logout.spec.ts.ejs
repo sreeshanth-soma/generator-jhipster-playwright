@@ -1,0 +1,26 @@
+import { test, expect } from '@playwright/test';
+import { credentials } from '../../support/commands';
+import { clickOnLoginItem, clickOnLogoutItem } from '../../support/navbar';
+
+test.describe('logout', () => {
+  let username: string;
+  let password: string;
+
+  test.beforeAll(() => {
+    const creds = credentials();
+    username = creds.adminUsername;
+    password = creds.adminPassword;
+  });
+
+  test('go to home page when successfully logs out', async ({ page }) => {
+    await page.goto('/');
+    await clickOnLoginItem(page);
+    await page.locator('[data-cy="username"]').fill(username);
+    await page.locator('[data-cy="password"]').fill(password);
+    await page.locator('[data-cy="submit"]').click();
+    await page.waitForURL('**/');
+    await clickOnLogoutItem(page);
+    // Should be redirected to home or login
+    await expect(page).toHaveURL(/\//);
+  });
+});

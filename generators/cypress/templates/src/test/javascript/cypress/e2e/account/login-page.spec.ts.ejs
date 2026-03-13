@@ -1,0 +1,63 @@
+import { test, expect } from '@playwright/test';
+import {
+  errorLoginSelector,
+  passwordLoginSelector,
+  submitLoginSelector,
+  titleLoginSelector,
+  usernameLoginSelector,
+  credentials,
+} from '../../support/commands';
+import { clickOnLoginItem } from '../../support/navbar';
+
+test.describe('login page', () => {
+  let username: string;
+  let password: string;
+
+  test.beforeAll(() => {
+    const creds = credentials();
+    username = creds.username;
+    password = creds.password;
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await clickOnLoginItem(page);
+  });
+
+  test('greets with signin', async ({ page }) => {
+    await expect(page.locator(titleLoginSelector)).toBeVisible();
+  });
+
+  test('requires username', async ({ page }) => {
+    await page.locator(passwordLoginSelector).fill('a-password');
+    await page.locator(submitLoginSelector).click();
+    // login page should stay open when login fails
+    await expect(page.locator(titleLoginSelector)).toBeVisible();
+  });
+
+  test('requires password', async ({ page }) => {
+    await page.locator(usernameLoginSelector).fill('a-login');
+    await page.locator(submitLoginSelector).click();
+    // login page should stay open when login fails
+    await expect(page.locator(titleLoginSelector)).toBeVisible();
+  });
+
+  test('errors when password is incorrect', async ({ page }) => {
+    await page.locator(usernameLoginSelector).fill(username);
+    await page.locator(passwordLoginSelector).fill('bad-password');
+    const responsePromise = page.waitForResponse('**/api/authenticate');
+    await page.locator(submitLoginSelector).click();
+    const response = await responsePromise;
+    expect(response.status()).toBe(401);
+    await expect(page.locator(errorLoginSelector)).toBeVisible();
+  });
+
+  test('go to home page when successfully logs in', async ({ page }) => {
+    await page.locator(usernameLoginSelector).fill(username);
+    await page.locator(passwordLoginSelector).fill(password);
+    const responsePromise = page.waitForResponse('**/api/authenticate');
+    await page.locator(submitLoginSelector).click();
+    const response = await responsePromise;
+    expect(response.status()).toBe(200);
+  });
+});
