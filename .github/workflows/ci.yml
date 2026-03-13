@@ -114,6 +114,9 @@ jobs:
             ${{ runner.temp }}/${{ matrix.app_dir }}/.yo-rc.json
             ${{ runner.temp }}/${{ matrix.app_dir }}/app.jdl
             ${{ runner.temp }}/${{ matrix.app_dir }}/backend.log
+            ${{ runner.temp }}/${{ matrix.app_dir }}/generation.log
+            ${{ runner.temp }}/${{ matrix.app_dir }}/npm-install.log
             ${{ runner.temp }}/${{ matrix.app_dir }}/package.json
             ${{ runner.temp }}/${{ matrix.app_dir }}/playwright-report
+            ${{ runner.temp }}/${{ matrix.app_dir }}/playwright-install.log
             ${{ runner.temp }}/${{ matrix.app_dir }}/test-results
