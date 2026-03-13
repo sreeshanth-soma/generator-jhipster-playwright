@@ -40,10 +40,9 @@ test.describe('login page', () => {
 
   test('requires username', async ({ page }) => {
     await page.locator(passwordLoginSelector).fill('a-password');
-    const responsePromise = page.waitForResponse('**/api/<% if (authenticationTypeSession) { %>authentication<% } else { %>authenticate<% } %>');
     await page.locator(submitLoginSelector).click();
 <%_ if (!clientFrameworkReact) { _%>
-    const response = await responsePromise;
+    const response = await page.waitForResponse('**/api/<% if (authenticationTypeSession) { %>authentication<% } else { %>authenticate<% } %>');
     expect(response.status()).toBe(<% if (authenticationTypeSession) { %>401<% } else { %>400<% } %>);
 <%_ } _%>
     // login page should stay open when login fails
@@ -52,10 +51,9 @@ test.describe('login page', () => {
 
   test('requires password', async ({ page }) => {
     await page.locator(usernameLoginSelector).fill('a-login');
-    const responsePromise = page.waitForResponse('**/api/<% if (authenticationTypeSession) { %>authentication<% } else { %>authenticate<% } %>');
     await page.locator(submitLoginSelector).click();
 <%_ if (!clientFrameworkReact) { _%>
-    const response = await responsePromise;
+    const response = await page.waitForResponse('**/api/<% if (authenticationTypeSession) { %>authentication<% } else { %>authenticate<% } %>');
     expect(response.status()).toBe(<% if (authenticationTypeSession) { %>401<% } else { %>400<% } %>);
     await expect(page.locator(errorLoginSelector)).toBeVisible();
 <%_ } else { _%>

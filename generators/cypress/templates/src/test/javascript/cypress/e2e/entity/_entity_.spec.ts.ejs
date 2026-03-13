@@ -68,7 +68,7 @@ import {
   getEntityDetailsHeading,
   getEntityDeleteDialogHeading,
 } from '../../support/entity';
-import { credentials, login } from '../../support/commands';
+import { credentials, login, authenticatedRequest } from '../../support/commands';
 import { clickOn<%= adminEntity && !applicationTypeMicroservice ? 'Admin' : 'Entity' %>MenuItem } from '../../support/navbar';
 
 test.describe('<%- entityNameCapitalized %> e2e test', () => {
@@ -101,7 +101,9 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
   <%_ } _%>
   test.beforeEach(async ({ request }) => {
   <%_ for (const otherEntity of requiredOtherEntities) { _%>
-    const response<%= otherEntity.entityClass %> = await request.post('/<%= baseApi + otherEntity.entityApiUrl %>', {
+    const response<%= otherEntity.entityClass %> = await authenticatedRequest(request, {
+      method: 'POST',
+      url: '/<%= baseApi + otherEntity.entityApiUrl %>',
       data: <%- JSON.stringify(this.generateTestEntity(otherEntity.fields.filter(f => !f.autoGenerate))) %>,
     });
     <%= otherEntity.entityInstance %> = await response<%= otherEntity.entityClass %>.json();
@@ -114,7 +116,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
 <%_ } _%>
   test.afterEach(async ({ request }) => {
     if (<%= entityInstance %>) {
-      await request.delete(`/<%= baseApi + entityApiUrl %>/${<%= entityInstance %>.<%= primaryKey.name %>}`);
+      await authenticatedRequest(request, { method: 'DELETE', url: `/<%= baseApi + entityApiUrl %>/${<%= entityInstance %>.<%= primaryKey.name %>}` });
       <%= entityInstance %> = undefined;
     }
   });
@@ -126,7 +128,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
   test.afterEach(async ({ request }) => {
   <%_ for (const otherEntity of requiredOtherEntities) { _%>
     if (<%= otherEntity.entityInstance %>) {
-      await request.delete(`/<%= baseApi + otherEntity.entityApiUrl %>/${<%= otherEntity.entityInstance %>.<%= otherEntity.primaryKey.name %>}`);
+      await authenticatedRequest(request, { method: 'DELETE', url: `/<%= baseApi + otherEntity.entityApiUrl %>/${<%= otherEntity.entityInstance %>.<%= otherEntity.primaryKey.name %>}` });
       <%= otherEntity.entityInstance %> = undefined;
     }
   <%_ } _%>
@@ -179,7 +181,9 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
       /* Disabled due to incompatibility
   <%_ } _%>
       test.beforeEach(async ({ page, request }) => {
-        const createResponse = await request.post('/<%= baseApi + entityApiUrl %>', {
+        const createResponse = await authenticatedRequest(request, {
+          method: 'POST',
+          url: '/<%= baseApi + entityApiUrl %>',
   <%_ if (requiredRelationships.length > 0) { _%>
           data: {
             ...<%= entityInstance %>Sample,

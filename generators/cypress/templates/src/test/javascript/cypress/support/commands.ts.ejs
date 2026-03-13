@@ -7,7 +7,8 @@
  *   - withAdminUi
  *   - clientFrameworkAngular, clientFrameworkReact, clientFrameworkVue
  */
-import type { Page, APIRequestContext } from '@playwright/test';
+import type { Page, APIRequestContext, APIResponse } from '@playwright/test';
+import { request as pwRequest } from '@playwright/test';
 
 // ***********************************************
 // Begin Specific Selector Attributes
@@ -71,9 +72,9 @@ export const configurationPageHeadingSelector = '[data-cy="configurationPageHead
 // End Specific Selector Attributes
 // ***********************************************
 
-export const classInvalid = <% if (clientFrameworkAngular) { %>'ng-invalid';<% } else { %>'is-invalid'<% } %>;
+export const classInvalid = <% if (clientFrameworkAngular) { %>'ng-invalid'<% } else { %>'is-invalid'<% } %>;
 
-export const classValid = <% if (clientFrameworkAngular) { %>'ng-valid';<% } else { %>'is-valid'<% } %>;
+export const classValid = <% if (clientFrameworkAngular) { %>'ng-valid'<% } else { %>'is-valid'<% } %>;
 
 export interface Credentials {
   adminUsername: string;
@@ -94,64 +95,101 @@ export function credentials(): Credentials {
   };
 }
 
+<%_ if (authenticationTypeJwt) { _%>
+// JWT token storage for authenticated API requests
+let _jwtToken: string | undefined;
+
 /**
- * Perform authenticated API request.
- * Translates Cypress.Commands.add('authenticatedRequest', ...)
+ * Get a JWT token for API authentication.
+ */
+export async function getAuthToken(request: APIRequestContext, username: string, password: string): Promise<string> {
+  const response = await request.post('/api/authenticate', {
+    data: { username, password },
+  });
+  const { id_token } = await response.json();
+  return id_token;
+}
+
+/**
+ * Perform authenticated API request with JWT.
  */
 export async function authenticatedRequest(
   request: APIRequestContext,
   data: { method?: string; url: string; data?: unknown },
-) {
-<%_ if (authenticationTypeJwt) { _%>
-  // JWT authentication: retrieve token from stored state
-  const token = process.env.__JWT_TOKEN__;
-  if (token) {
-    return request.fetch(data.url, {
-      method: data.method ?? 'GET',
-      data: data.data,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+): Promise<APIResponse> {
+  if (!_jwtToken) {
+    const creds = credentials();
+    _jwtToken = await getAuthToken(request, creds.adminUsername, creds.adminPassword);
   }
-  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
-<%_ } else { _%>
-  // Session/CSRF authentication
-  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
-<%_ } _%>
+  return request.fetch(data.url, {
+    method: data.method ?? 'GET',
+    data: data.data,
+    headers: {
+      Authorization: `Bearer ${_jwtToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
 }
 
 /**
  * Login and set up session.
- * Translates Cypress.Commands.add('login', ...)
  */
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
-<%_ if (authenticationTypeOauth2) { _%>
-  // OAuth2 login via Keycloak
+  const token = await getAuthToken(request, username, password);
+  _jwtToken = token;
+  // Store token in session storage for the page
+  await page.goto('/');
+  await page.evaluate((t) => {
+  <%_ if (clientFrameworkVue) { _%>
+    sessionStorage.setItem('jhi-authenticationToken', t);
+  <%_ } else { _%>
+    sessionStorage.setItem('jhi-authenticationToken', JSON.stringify(t));
+  <%_ } _%>
+  }, token);
+  // Reload to pick up the token
+  await page.reload();
+}
+<%_ } else if (authenticationTypeOauth2) { _%>
+/**
+ * Perform authenticated API request (OAuth2).
+ */
+export async function authenticatedRequest(
+  request: APIRequestContext,
+  data: { method?: string; url: string; data?: unknown },
+): Promise<APIResponse> {
+  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
+}
+
+/**
+ * Login via OAuth2 (Keycloak).
+ */
+export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
   await page.goto('/oauth2/authorization/oidc');
   await page.waitForSelector('#kc-form-login', { timeout: 15000 });
   await page.locator('#username').fill(username);
   await page.locator('#password').fill(password);
   await page.locator('#kc-login').click();
   await page.waitForURL('**/', { timeout: 15000 });
-<%_ } else { _%>
-  // JWT/Session login via API
-  await request.get('/api/account', { failOnStatusCode: false });
-  const response = await request.post('/api/authenticate', {
-    data: { username, password },
-  <%_ if (authenticationTypeSession) { _%>
-    form: true,
-  <%_ } _%>
-  });
-  <%_ if (!authenticationTypeSession) { _%>
-  const { id_token } = await response.json();
-  // Store token in session storage for the page
-  await page.goto('/');
-  await page.evaluate((token) => {
-    <%_ if (clientFrameworkVue) { _%>
-    sessionStorage.setItem('jhi-authenticationToken', token);
-    <%_ } else { _%>
-    sessionStorage.setItem('jhi-authenticationToken', JSON.stringify(token));
-    <%_ } _%>
-  }, id_token);
-  <%_ } _%>
-<%_ } _%>
 }
+<%_ } else { _%>
+/**
+ * Perform authenticated API request (Session).
+ */
+export async function authenticatedRequest(
+  request: APIRequestContext,
+  data: { method?: string; url: string; data?: unknown },
+): Promise<APIResponse> {
+  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
+}
+
+/**
+ * Login via Session auth.
+ */
+export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
+  await request.post('/api/authentication', {
+    data: { username, password },
+    form: true,
+  });
+  await page.goto('/');
+}
+<%_ } _%>

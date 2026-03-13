@@ -8,11 +8,11 @@ import {
   submitSettingsSelector,
   emailSettingsSelector,
   credentials,
+  login,
+  authenticatedRequest,
 } from '../../support/commands';
-import { login } from '../../support/commands';
 import { clickOnSettingsItem } from '../../support/navbar';
 import type { Account } from '../../support/account';
-import { getAccount, saveAccount } from '../../support/account';
 
 test.describe('/account/settings', () => {
   let adminUsername: string;
@@ -24,7 +24,7 @@ test.describe('/account/settings', () => {
   let originalUserAccount: Account;
   let testUserAccount: Account;
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(() => {
     const creds = credentials();
     ({ adminUsername, adminPassword, username, password } = creds);
   });
@@ -32,23 +32,19 @@ test.describe('/account/settings', () => {
   test.beforeEach(async ({ page, request }) => {
     await login(page, request, username, password);
 
-    const account = await getAccount(request);
-    originalUserAccount = account;
-    testUserAccount = { ...account, email: testUserEmail };
-    const saveResponse = await saveAccount(request, testUserAccount);
-    expect(saveResponse.status()).toBe(200);
+    const accountResp = await authenticatedRequest(request, { method: 'GET', url: '/api/account' });
+    originalUserAccount = await accountResp.json() as Account;
+    testUserAccount = { ...originalUserAccount, email: testUserEmail };
+    const saveResp = await authenticatedRequest(request, { method: 'POST', url: '/api/account', data: testUserAccount });
+    expect(saveResp.status()).toBe(200);
 
     await page.goto('/account/settings');
     await expect(page.locator(emailSettingsSelector)).toHaveValue(testUserEmail);
   });
 
   test.afterEach(async ({ request }) => {
-    await saveAccount(request, testUserAccount);
-  });
-
-  test.afterAll(async ({ request }) => {
-    if (originalUserAccount) {
-      await saveAccount(request, originalUserAccount);
+    if (testUserAccount) {
+      await authenticatedRequest(request, { method: 'POST', url: '/api/account', data: testUserAccount });
     }
   });
 
