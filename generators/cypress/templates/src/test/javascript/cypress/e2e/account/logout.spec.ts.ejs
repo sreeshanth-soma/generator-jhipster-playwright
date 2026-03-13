@@ -4,12 +4,12 @@
 import { test, expect } from '@playwright/test';
 import {
   accountMenuSelector,
-  navbarSelector,
-  loginItemSelector,
   credentials,
+  login,
+  loginItemSelector,
+  navbarSelector,
 } from '../../support/commands';
 import { clickOnLogoutItem } from '../../support/navbar';
-import { login } from '../../support/commands';
 
 test.describe('logout', () => {
   let username: string;
@@ -24,15 +24,17 @@ test.describe('logout', () => {
   test('go to home page when successfully logs out', async ({ page, request }) => {
     await login(page, request, username, password);
     await page.goto('/');
-
-    await clickOnLogoutItem(page);
-
 <%_ if (authenticationUsesCsrf) { _%>
-    // Wait for CSRF logout POST
-    await page.waitForResponse('**/api/logout');
+    // Wait for CSRF-protected logout to complete
+    const logoutResponse = page.waitForResponse('**/api/logout');
 <%_ } _%>
-    await expect(
-      page.locator(navbarSelector).locator(accountMenuSelector).locator(loginItemSelector)
-    ).toBeVisible();
+    await clickOnLogoutItem(page);
+<%_ if (authenticationUsesCsrf) { _%>
+    await logoutResponse;
+<%_ } _%>
+    // Wait for React to process the logout and show login item
+    await page.locator(navbarSelector).locator(accountMenuSelector).waitFor({ state: 'visible', timeout: 10000 });
+    await page.locator(navbarSelector).locator(accountMenuSelector).click();
+    await expect(page.locator(navbarSelector).locator(accountMenuSelector).locator(loginItemSelector)).toBeVisible({ timeout: 10000 });
   });
 });

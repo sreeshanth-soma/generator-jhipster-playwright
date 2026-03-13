@@ -146,8 +146,9 @@ export async function login(page: Page, request: APIRequestContext, username: st
     sessionStorage.setItem('jhi-authenticationToken', JSON.stringify(t));
   <%_ } _%>
   }, token);
-  // Reload to pick up the token
+  // Reload to pick up the token and wait for the app to fully mount
   await page.reload();
+  await page.locator(accountMenuSelector).waitFor({ state: 'visible', timeout: 15000 });
 }
 <%_ } else if (authenticationTypeOauth2) { _%>
 /**

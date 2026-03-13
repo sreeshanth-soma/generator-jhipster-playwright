@@ -143,15 +143,15 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
     await page.goto('/');
     const responsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
     await clickOn<%= adminEntity && !applicationTypeMicroservice ? 'Admin' : 'Entity' %>MenuItem(page, '<%= entityPage %>');
+    await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
     const response = await responsePromise;
     const body = await response.json();
+    await expect(getEntityHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
     if (body.length === 0) {
       await expect(page.locator(entityTableSelector)).not.toBeVisible();
     } else {
-      await expect(page.locator(entityTableSelector)).toBeVisible();
+      await expect(page.locator(entityTableSelector)).toBeVisible({ timeout: 10000 });
     }
-    await expect(getEntityHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
-    await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
   });
 
   test.describe('<%- entityNameCapitalized %> page', () => {
@@ -198,7 +198,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
         <%= entityInstance %> = await createResponse.json();
 
         // Mock the list endpoint
-        await page.route('**/<%= baseApi + entityApiUrl %>+(?*|)', async (route, req) => {
+        await page.route('**/<%= baseApi + entityApiUrl %>?(\\?*|)', async (route, req) => {
           if (req.method() === 'GET') {
             await route.fulfill({
               status: 200,
