@@ -141,7 +141,8 @@ export async function authenticatedRequest(
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
   const token = await getAuthToken(request, username, password);
   _jwtToken = token;
-  await page.addInitScript((t) => {
+  await page.goto('/');
+  await page.evaluate((t) => {
 <%_ if (clientFrameworkVue) { _%>
     sessionStorage.setItem('jhi-authenticationToken', t);
 <%_ } else { _%>

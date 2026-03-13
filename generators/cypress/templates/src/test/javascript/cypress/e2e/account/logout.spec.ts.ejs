@@ -23,7 +23,6 @@ test.describe('logout', () => {
 
   test('go to home page when successfully logs out', async ({ page, request }) => {
     await login(page, request, username, password);
-    await page.goto('/');
 <%_ if (authenticationUsesCsrf) { _%>
     const logoutPromise = page.waitForResponse('**/api/logout');
 <%_ } _%>
