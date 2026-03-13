@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:<%= clientFrameworkAngular ? devServerPort : gatewayServerPort || serverPort %>/',
+    baseURL: 'http://localhost:<%= devServerPortProxy || devServerPort || gatewayServerPort || serverPort %>/',
     trace: 'on-first-retry',
     viewport: { width: 1200, height: 720 },
   },
@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run webapp:dev<% if (clientFrameworkAngular) { %> -- --open=false<% } %>',
-    url: 'http://localhost:<%= clientFrameworkAngular ? devServerPort : gatewayServerPort || serverPort %>/',
+    url: 'http://localhost:<%= devServerPortProxy || devServerPort || gatewayServerPort || serverPort %>/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
