@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-const { dirname, basename, join } = require('path');
-const { version, bin } = require('../package.json');
+const path = require('path');
+
+const { bin, version } = require('../package.json');
 
 // Get package name to use as namespace.
 // Allows blueprints to be aliased.
-const packagePath = dirname(__dirname);
-const packageFolderName = basename(packagePath);
-const devBlueprintPath = join(packagePath, '.blueprint');
+const packagePath = path.dirname(__dirname);
+const packageFolderName = path.basename(packagePath);
+const devBlueprintPath = path.join(packagePath, '.blueprint');
 const blueprint = packageFolderName.startsWith('jhipster-') ? `generator-${packageFolderName}` : packageFolderName;
 
 (async () => {

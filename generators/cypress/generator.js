@@ -1,7 +1,8 @@
 import BaseApplicationGenerator from 'generator-jhipster/generators/base-application';
 import { createFaker } from 'generator-jhipster/generators/base-application/support';
 import { generateTestEntity } from 'generator-jhipster/generators/client/support';
-import { playwrightFiles, entityPlaywrightFiles } from './files.js';
+
+import { entityPlaywrightFiles, playwrightFiles } from './files.js';
 
 /**
  * Simple Java-style string hash code (same as JHipster internal stringHashCode).
@@ -87,8 +88,14 @@ export default class extends BaseApplicationGenerator {
         const packageJsonStorage = this.createStorage(
           this.destinationPath(application.clientRootDir || '', 'package.json'),
         );
+        const dependencies = packageJsonStorage.createStorage('dependencies');
         const devDependencies = packageJsonStorage.createStorage('devDependencies');
         devDependencies.set('@playwright/test', '1.58.2');
+
+        if (application.clientFrameworkAngular) {
+          // ng-bootstrap and Bootstrap both declare Popper as a peer dependency.
+          dependencies.set('@popperjs/core', '^2.11.8');
+        }
 
         const scriptsStorage = packageJsonStorage.createStorage('scripts');
         scriptsStorage.set('playwright', 'npx playwright test --ui');

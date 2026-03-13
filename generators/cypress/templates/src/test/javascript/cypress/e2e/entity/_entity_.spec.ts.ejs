@@ -15,7 +15,7 @@
  *   - this._ — lodash
  */
 
-const skipUserManagementCreatePage = builtInUserManagement && (!userManagement.skipClient || clientFrameworkReact);
+const skipUserManagementCreatePage = builtInUserManagement && !userManagement.skipClient;
 const baseApi = entityApi + 'api/';
 
 const entityFakeData = this.generateTestEntity(fields.filter(f => !f.autoGenerate && !f.nullable));
@@ -75,6 +75,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
 
   const <%= entityInstance %>PageUrl = '/<%= entityPage %>';
   const <%= entityInstance %>PageUrlPattern = new RegExp('/<%= entityPage %>(\\\\?.*)?$');
+  const <%= entityInstance %>ApiUrlPattern = new RegExp('/<%= baseApi + entityApiUrl %>(\\\\?.*)?$');
   let username: string;
   let password: string;
 <%_ if (!readOnly) { _%>
@@ -187,10 +188,19 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
           data: <%= entityInstance %>Sample,
   <%_ } _%>
         });
-        <%= entityInstance %> = await createResponse.json();
+        const created<%= entityNameCapitalized %> = await createResponse.json();
+        <%= entityInstance %> = {
+          ...<%= entityInstance %>Sample,
+          ...created<%= entityNameCapitalized %>,
+        };
+  <%_ if (builtInUserManagement) { _%>
+        if (<%= entityInstance %>.login) {
+          <%= entityInstance %>.login = String(<%= entityInstance %>.login).toLowerCase();
+        }
+  <%_ } _%>
 
         // Mock the list endpoint
-        await page.route('**/<%= baseApi + entityApiUrl %>?(\\?*|)', async (route, req) => {
+        await page.route(<%= entityInstance %>ApiUrlPattern, async (route, req) => {
           if (req.method() === 'GET') {
             await route.fulfill({
               status: 200,
@@ -202,7 +212,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
               contentType: 'application/json',
               body: JSON.stringify([<%= entityInstance %>]),
             });
-            await page.unroute('**/<%= baseApi + entityApiUrl %>?(\\?*|)');
+            await page.unroute(<%= entityInstance %>ApiUrlPattern);
           } else {
             await route.continue();
           }
@@ -228,7 +238,8 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
 <%_ } _%>
 
       test('detail button click should load details <%- entityNameCapitalized %> page', async ({ page }) => {
-        await page.locator(entityDetailsButtonSelector).first().click();
+        const entityRow = page.locator('tbody tr').filter({ hasText: String(<%= entityInstance %>.<%= primaryKey.name %>) }).first();
+        await entityRow.locator(entityDetailsButtonSelector).click();
         await expect(getEntityDetailsHeading(page, '<%= entityInstance %>')).toBeVisible();
         const responsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
         await page.locator(entityDetailsBackButtonSelector).click();
@@ -239,7 +250,8 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
 
 <%_ if (!readOnly && updatableEntity) { _%>
       test('edit button click should load edit <%- entityNameCapitalized %> page and go back', async ({ page }) => {
-        await page.locator(entityEditButtonSelector).first().click();
+        const entityRow = page.locator('tbody tr').filter({ hasText: String(<%= entityInstance %>.<%= primaryKey.name %>) }).first();
+        await entityRow.locator(entityEditButtonSelector).click();
         await expect(getEntityCreateUpdateHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
         await expect(page.locator(entityCreateSaveButtonSelector)).toBeVisible();
         const responsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
@@ -250,7 +262,8 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
       });
 
       test<% if (jpaMetamodelFiltering && clientFrameworkVue && requiredRelationships.length) { %>.skip<% } %>('edit button click should load edit <%- entityNameCapitalized %> page and save', async ({ page }) => {
-        await page.locator(entityEditButtonSelector).first().click();
+        const entityRow = page.locator('tbody tr').filter({ hasText: String(<%= entityInstance %>.<%= primaryKey.name %>) }).first();
+        await entityRow.locator(entityEditButtonSelector).click();
         await expect(getEntityCreateUpdateHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
         await page.locator(entityCreateSaveButtonSelector).click();
         await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
@@ -263,7 +276,8 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
   <%_ if (clientFrameworkReact) { _%>
         const dialogPromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>/*');
   <%_ } _%>
-        await page.locator(entityDeleteButtonSelector).last().click();
+        const entityRow = page.locator('tbody tr').filter({ hasText: String(<%= entityInstance %>.<%= primaryKey.name %>) }).first();
+        await entityRow.locator(entityDeleteButtonSelector).click();
   <%_ if (clientFrameworkReact) { _%>
         await dialogPromise;
   <%_ } _%>
@@ -334,17 +348,24 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
        await page.locator(`[data-cy="<%= relationship.relationshipFieldName %>"]`).selectOption(<%= relationship.collection ? '[0]' : '1' %>);
   <%_ } _%>
 
+  <%_ if (builtInUserManagement) { _%>
+      await page.locator(`[data-cy="langKey"]`).selectOption({ index: 0 });
+  <%_ } _%>
+
   <%_ if (anyFieldHasFileBasedContentType) { _%>
       // Wait for blob fields to be validated
       await page.waitForTimeout(200);
   <%_ } _%>
       const createResponsePromise = page.waitForResponse('**/<%= baseApi + entityApiUrl %>');
+      const listResponsePromise = page.waitForResponse(
+        resp => resp.url().includes('/<%= baseApi + entityApiUrl %>') && resp.request().method() === 'GET'
+      );
       await page.locator(entityCreateSaveButtonSelector).click();
       const createResponse = await createResponsePromise;
       expect(createResponse.status()).toBe(201);
       <%= entityInstance %> = await createResponse.json();
 
-      const listResponse = await page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
+      const listResponse = await listResponsePromise;
       expect(listResponse.status()).toBe(200);
       await expect(page).toHaveURL(<%= entityInstance %>PageUrlPattern);
     });

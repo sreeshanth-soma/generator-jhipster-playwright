@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:<%= gatewayServerPort || serverPort %>/',
+    baseURL: 'http://localhost:<%= clientFrameworkAngular ? devServerPort : gatewayServerPort || serverPort %>/',
     trace: 'on-first-retry',
     viewport: { width: 1200, height: 720 },
   },
@@ -22,8 +22,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run webapp:dev',
-    url: 'http://localhost:<%= gatewayServerPort || serverPort %>/',
+    command: 'npm run webapp:dev<% if (clientFrameworkAngular) { %> -- --open=false<% } %>',
+    url: 'http://localhost:<%= clientFrameworkAngular ? devServerPort : gatewayServerPort || serverPort %>/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
