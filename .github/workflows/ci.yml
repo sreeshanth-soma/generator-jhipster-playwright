@@ -89,7 +89,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
 
       - name: Install JHipster CLI and packaged blueprint
         run: |

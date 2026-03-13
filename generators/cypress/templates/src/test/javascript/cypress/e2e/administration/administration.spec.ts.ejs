@@ -29,7 +29,6 @@ test.describe('/admin', () => {
 
   test.beforeEach(async ({ page, request }) => {
     await login(page, request, adminUsername, adminPassword);
-    await page.goto('/');
   });
 
 <%_ if (withAdminUi) { _%>
