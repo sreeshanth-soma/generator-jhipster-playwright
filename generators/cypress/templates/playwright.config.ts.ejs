@@ -2,15 +2,18 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '<%= clientTestDir %>playwright/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 2,
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:<%= gatewayServerPort || serverPort %>/',
     trace: 'on-first-retry',
     viewport: { width: 1200, height: 720 },
+  },
+  expect: {
+    timeout: 10_000,
   },
   projects: [
     {

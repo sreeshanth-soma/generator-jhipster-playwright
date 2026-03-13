@@ -67,7 +67,7 @@ export default class extends BaseApplicationGenerator {
     return this.asWritingEntitiesTaskGroup({
       async writeEntityPlaywrightFiles({ application, entities }) {
         for (const entity of entities.filter(
-          e => !e.builtInUser && !e.embedded && !e.entityClientModelOnly
+          e => e.generateEntityCypress && !e.builtInUser && !e.embedded && !e.entityClientModelOnly
         )) {
           const context = { ...application, ...entity };
           await this.writeFiles({

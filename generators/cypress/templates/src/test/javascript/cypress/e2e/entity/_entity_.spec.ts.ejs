@@ -288,6 +288,7 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
   test.describe<% if (skipUserManagementCreatePage) { %>.skip<% } %>('new <%- entityNameCapitalized %> page', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(<%= entityInstance %>PageUrl);
+      await page.waitForResponse('**/<%= baseApi + entityApiUrl %>*');
       await page.locator(entityCreateButtonSelector).click();
       await expect(getEntityCreateUpdateHeading(page, '<%- entityNameCapitalized %>')).toBeVisible();
     });
