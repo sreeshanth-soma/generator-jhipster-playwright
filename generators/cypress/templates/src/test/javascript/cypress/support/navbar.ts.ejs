@@ -4,7 +4,7 @@
  *
  * Source: ZERO EJS variables — pure static translation.
  */
-import type { Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import {
   navbarSelector,
   adminMenuSelector,
@@ -17,37 +17,37 @@ import {
   entityItemSelector,
 } from './commands';
 
+async function clickDropdownItem(menu: Locator, item: string): Promise<void> {
+  await menu.click();
+  const itemLocator = menu.locator(item);
+  await expect(itemLocator).toBeVisible();
+  await itemLocator.click();
+}
+
 export async function clickOnLoginItem(page: Page): Promise<void> {
-  await page.locator(navbarSelector).locator(accountMenuSelector).click();
-  await page.locator(navbarSelector).locator(accountMenuSelector).locator(loginItemSelector).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(accountMenuSelector), loginItemSelector);
 }
 
 export async function clickOnLogoutItem(page: Page): Promise<void> {
-  await page.locator(navbarSelector).locator(accountMenuSelector).click();
-  await page.locator(navbarSelector).locator(accountMenuSelector).locator(logoutItemSelector).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(accountMenuSelector), logoutItemSelector);
 }
 
 export async function clickOnRegisterItem(page: Page): Promise<void> {
-  await page.locator(navbarSelector).locator(accountMenuSelector).click();
-  await page.locator(navbarSelector).locator(accountMenuSelector).locator(registerItemSelector).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(accountMenuSelector), registerItemSelector);
 }
 
 export async function clickOnSettingsItem(page: Page): Promise<void> {
-  await page.locator(navbarSelector).locator(accountMenuSelector).click();
-  await page.locator(navbarSelector).locator(accountMenuSelector).locator(settingsItemSelector).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(accountMenuSelector), settingsItemSelector);
 }
 
 export async function clickOnPasswordItem(page: Page): Promise<void> {
-  await page.locator(navbarSelector).locator(accountMenuSelector).click();
-  await page.locator(navbarSelector).locator(accountMenuSelector).locator(passwordItemSelector).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(accountMenuSelector), passwordItemSelector);
 }
 
 export async function clickOnAdminMenuItem(page: Page, item: string): Promise<void> {
-  await page.locator(navbarSelector).locator(adminMenuSelector).click();
-  await page.locator(navbarSelector).locator(adminMenuSelector).locator(`.dropdown-item[href="/${item}"]`).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(adminMenuSelector), `.dropdown-item[href="/${item}"]`);
 }
 
 export async function clickOnEntityMenuItem(page: Page, entityName: string): Promise<void> {
-  await page.locator(navbarSelector).locator(entityItemSelector).click();
-  await page.locator(navbarSelector).locator(entityItemSelector).locator(`.dropdown-item[href="/${entityName}"]`).click();
+  await clickDropdownItem(page.locator(navbarSelector).locator(entityItemSelector), `.dropdown-item[href="/${entityName}"]`);
 }
