@@ -1,5 +1,8 @@
 # generator-jhipster-playwright
 
+[![CI](https://github.com/sreeshanth-soma/generator-jhipster-playwright/actions/workflows/ci.yml/badge.svg)](https://github.com/sreeshanth-soma/generator-jhipster-playwright/actions/workflows/ci.yml)
+[![npm version](https://badge.fury.io/js/generator-jhipster-playwright.svg)](https://www.npmjs.com/package/generator-jhipster-playwright)
+
 > A JHipster blueprint that replaces the generated Cypress end-to-end suite with Playwright.
 
 ## Introduction
