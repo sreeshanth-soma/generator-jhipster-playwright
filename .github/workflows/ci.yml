@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 2
+  PLAYWRIGHT_HTML_OPEN: never
+
+jobs:
+  validate-package:
+    name: Validate package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate blueprint package
+        run: npm test
+
+      - name: Pack blueprint
+        id: pack
+        run: echo "file=$(npm pack --cache ./.npm-cache | tail -n 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload packaged blueprint
+        uses: actions/upload-artifact@v4
+        with:
+          name: blueprint-package
+          path: ${{ steps.pack.outputs.file }}
+          if-no-files-found: error
+          retention-days: 7
+
+  generated-e2e:
+    name: Generated ${{ matrix.framework }} E2E
+    needs: validate-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - framework: react
+            base_name: ciReactApp
+            app_dir: ci-react-app
+          - framework: angular
+            base_name: ciAngularApp
+            app_dir: ci-angular-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download packaged blueprint
+        uses: actions/download-artifact@v4
+        with:
+          name: blueprint-package
+          path: ${{ runner.temp }}/blueprint-package
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Install JHipster CLI and packaged blueprint
+        run: |
+          tarball_path="$(echo "${RUNNER_TEMP}/blueprint-package"/*.tgz)"
+          npm install -g generator-jhipster@9.0.0 "${tarball_path}"
+
+      - name: Generate and verify ${{ matrix.framework }} app
+        run: |
+          tarball_path="$(echo "${RUNNER_TEMP}/blueprint-package"/*.tgz)"
+          bash scripts/ci/verify-generated-app.sh \
+            "${{ matrix.framework }}" \
+            "${{ matrix.base_name }}" \
+            "${tarball_path}" \
+            "${RUNNER_TEMP}/${{ matrix.app_dir }}"
+
+      - name: Upload failure artifacts
+        if: ${{ failure() && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-app-${{ matrix.framework }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/${{ matrix.app_dir }}/.yo-rc.json
+            ${{ runner.temp }}/${{ matrix.app_dir }}/app.jdl
+            ${{ runner.temp }}/${{ matrix.app_dir }}/backend.log
+            ${{ runner.temp }}/${{ matrix.app_dir }}/package.json
+            ${{ runner.temp }}/${{ matrix.app_dir }}/playwright-report
+            ${{ runner.temp }}/${{ matrix.app_dir }}/test-results
