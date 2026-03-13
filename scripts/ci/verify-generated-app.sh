@@ -18,17 +18,6 @@ esac
 
 mkdir -p "${app_dir}"
 
-run_quiet() {
-  local log_file="${1:?Usage: run_quiet <log-file> <command> [args...]}"
-  shift
-
-  if ! "$@" >"${log_file}" 2>&1; then
-    echo "Command failed: $*" >&2
-    cat "${log_file}" >&2 || true
-    return 1
-  fi
-}
-
 cat > "${app_dir}/app.jdl" <<EOF
 application {
   config {
@@ -58,12 +47,12 @@ EOF
 
 cd "${app_dir}"
 
-run_quiet generation.log jhipster jdl app.jdl --blueprints playwright --skip-install --force --skip-git --no-insight
+jhipster jdl app.jdl --blueprints playwright --skip-install --force --skip-git --no-insight 2>&1 | tee generation.log
 
 # Use the packaged blueprint artifact so CI verifies the publishable tarball.
 npm pkg delete devDependencies.generator-jhipster-playwright
-run_quiet npm-install.log env PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --save-dev "${blueprint_tarball}"
-run_quiet playwright-install.log npx playwright install --with-deps chromium
+env PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --save-dev "${blueprint_tarball}" 2>&1 | tee npm-install.log
+npx playwright install --with-deps chromium 2>&1 | tee playwright-install.log
 
 ./mvnw -Dskip.installnodenpm -Dskip.npm -ntp --batch-mode > backend.log 2>&1 &
 backend_pid=$!

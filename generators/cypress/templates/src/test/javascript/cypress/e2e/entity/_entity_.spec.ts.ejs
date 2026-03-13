@@ -212,13 +212,17 @@ test.describe('<%- entityNameCapitalized %> e2e test', () => {
               contentType: 'application/json',
               body: JSON.stringify([<%= entityInstance %>]),
             });
-            await page.unroute(<%= entityInstance %>ApiUrlPattern);
           } else {
             await route.continue();
           }
-        });
+        }, { times: 1 });
 
+        const entitiesRequestPromise = page.waitForResponse(
+          response => response.url().match(<%= entityInstance %>ApiUrlPattern) !== null && response.request().method() === 'GET',
+        );
         await page.goto(<%= entityInstance %>PageUrl);
+        const entitiesResponse = await entitiesRequestPromise;
+        expect(entitiesResponse.status()).toBe(200);
       });
   <%_ if (skipCreateTest) { _%>
        */
