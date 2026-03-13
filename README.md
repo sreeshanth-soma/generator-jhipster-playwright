@@ -16,9 +16,8 @@ Verified against fresh generated JHipster applications:
 
 ## Installation
 
-To install or update this blueprint:
-
 ```bash
+npm install -g generator-jhipster@9.0.0
 npm install -g generator-jhipster-playwright
 ```
 
