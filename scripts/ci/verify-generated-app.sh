@@ -8,7 +8,7 @@ blueprint_tarball="${3:?Usage: verify-generated-app.sh <framework> <base-name> <
 app_dir="${4:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir>}"
 
 case "${framework}" in
-  react|angular)
+  react|angular|vue)
     ;;
   *)
     echo "Unsupported framework: ${framework}" >&2

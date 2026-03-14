@@ -67,6 +67,9 @@ jobs:
           - framework: angular
             base_name: ciAngularApp
             app_dir: ci-angular-app
+          - framework: vue
+            base_name: ciVueApp
+            app_dir: ci-vue-app
 
     steps:
       - name: Checkout repository
