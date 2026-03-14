@@ -211,12 +211,16 @@ export async function authenticatedRequest(
 
 /**
  * Login via Session auth.
+ * The session cookie lives in the `request` context; we copy it to the
+ * page's browser context so that page navigations are also authenticated.
  */
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
   await request.post('/api/authentication', {
     data: { username, password },
     form: true,
   });
+  const { cookies } = await request.storageState();
+  await page.context().addCookies(cookies);
   await page.goto('/');
   await waitForAppShell(page);
 }
