@@ -164,26 +164,49 @@ export async function authenticatedRequest(
 }
 
 /**
- * Login via OAuth2 (Keycloak).
+ * Login via OAuth2 (Keycloak, Okta, or Auth0 — detected from redirect URL).
  */
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
   await page.goto('/oauth2/authorization/oidc');
-  await page.waitForSelector('#kc-form-login', { timeout: 15000 });
-  await page.locator('#username').fill(username);
-  await page.locator('#password').fill(password);
-  await page.locator('#kc-login').click();
+  // Wait until we've left the JHipster app (landed on the identity provider)
+  await page.waitForURL(url => !url.toString().includes('/oauth2/authorization'), { timeout: 15000 });
+  const currentUrl = page.url();
+  if (currentUrl.includes('okta')) {
+    await page.locator('#okta-signin-username').fill(username);
+    await page.locator('#okta-signin-password').fill(password);
+    await page.locator('[type="submit"]').first().click();
+  } else if (currentUrl.includes('auth0')) {
+    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
+    await page.locator('button[type="submit"]').click();
+  } else {
+    // Keycloak (default)
+    await page.waitForSelector('#kc-form-login', { timeout: 15000 });
+    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
+    await page.locator('#kc-login').click();
+  }
   await page.waitForURL('**/', { timeout: 15000 });
   await waitForAppShell(page);
 }
 <%_ } else { _%>
 /**
  * Perform authenticated API request (Session).
+ * Reads the XSRF-TOKEN cookie and sends it as X-XSRF-TOKEN header for CSRF-protected endpoints.
  */
 export async function authenticatedRequest(
   request: APIRequestContext,
   data: { method?: string; url: string; data?: unknown },
 ): Promise<APIResponse> {
-  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
+  const storageState = await request.storageState();
+  const xsrfCookie = storageState.cookies.find(c => c.name === 'XSRF-TOKEN');
+  return request.fetch(data.url, {
+    method: data.method ?? 'GET',
+    data: data.data,
+    headers: {
+      ...(xsrfCookie ? { 'X-XSRF-TOKEN': xsrfCookie.value } : {}),
+    },
+  });
 }
 
 /**

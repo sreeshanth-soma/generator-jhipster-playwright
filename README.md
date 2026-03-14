@@ -9,7 +9,7 @@
 
 This is a JHipster blueprint. It overrides the `cypress` sub-generator and writes Playwright files instead of Cypress files for generated applications.
 
-Verified against freshly generated React and Angular JHipster applications — all tests passing, no failures or flakiness.
+Verified against freshly generated React, Angular, and Vue JHipster applications — all tests passing, no failures or flakiness.
 
 ## Installation
 

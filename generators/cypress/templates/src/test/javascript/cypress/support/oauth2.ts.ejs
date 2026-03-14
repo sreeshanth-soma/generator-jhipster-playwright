@@ -2,63 +2,109 @@
  * Playwright OAuth2 support helpers
  * Translated from Cypress oauth2.ts
  *
- * This module handles OAuth2/Keycloak authentication flows.
+ * Supports Keycloak, Okta, and Auth0.
  */
 import type { Page, APIRequestContext } from '@playwright/test';
 
 export interface OAuth2Data {
-  accessToken: string;
-  idToken: string;
+  url: string;
 }
 
 /**
- * Initiate OAuth2 login flow and return tokens.
- * Translates the Cypress OAuth2 command chain:
- *   1. GET /oauth2/authorization/oidc (follow redirects to Keycloak)
- *   2. Parse the Keycloak login form
- *   3. POST credentials to Keycloak
- *   4. Follow redirects back to the app
+ * Get the OAuth2 provider redirect URL without following it.
  */
-export async function oauth2Login(
+export async function getOauth2Data(request: APIRequestContext): Promise<OAuth2Data> {
+  const response = await request.get('/oauth2/authorization/oidc', { maxRedirects: 0 });
+  const location = response.headers()['location'] ?? '';
+  return { url: location };
+}
+
+/**
+ * Login via the appropriate OAuth2 provider (Keycloak, Okta, or Auth0).
+ * Provider is detected from the redirect URL.
+ */
+export async function oauthLogin(
   page: Page,
+  oauth2Data: OAuth2Data,
   username: string,
   password: string,
 ): Promise<void> {
-  // Navigate to the OAuth2 login endpoint
-  await page.goto('/oauth2/authorization/oidc');
+  const url = oauth2Data.url;
+  if (url.includes('okta')) {
+    await oktaLogin(page, oauth2Data, username, password);
+  } else if (url.includes('auth0')) {
+    await auth0Login(page, oauth2Data, username, password);
+  } else {
+    await keycloakLogin(page, oauth2Data, username, password);
+  }
+}
 
-  // Wait for Keycloak login form
+/**
+ * Login via Keycloak.
+ */
+export async function keycloakLogin(
+  page: Page,
+  oauth2Data: OAuth2Data,
+  username: string,
+  password: string,
+): Promise<void> {
+  await page.goto(oauth2Data.url);
   await page.waitForSelector('#kc-form-login', { timeout: 15000 });
-
-  // Fill in credentials
   await page.locator('#username').fill(username);
   await page.locator('#password').fill(password);
-
-  // Submit the form
   await page.locator('#kc-login').click();
-
-  // Wait for redirect back to the app
   await page.waitForURL('**/', { timeout: 15000 });
 }
 
 /**
- * Get OAuth2 tokens from the current session.
+ * Login via Auth0.
  */
-export async function getOAuth2Data(request: APIRequestContext): Promise<OAuth2Data | null> {
-  const response = await request.get('/api/account', { failOnStatusCode: false });
-  if (response.ok()) {
-    return {
-      accessToken: '',
-      idToken: '',
-    };
-  }
-  return null;
+export async function auth0Login(
+  page: Page,
+  oauth2Data: OAuth2Data,
+  username: string,
+  password: string,
+): Promise<void> {
+  await page.goto(oauth2Data.url);
+  await page.locator('#username').fill(username);
+  await page.locator('#password').fill(password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL('**/', { timeout: 15000 });
 }
 
 /**
- * Logout from OAuth2/Keycloak session.
+ * Login via Okta.
+ */
+export async function oktaLogin(
+  page: Page,
+  oauth2Data: OAuth2Data,
+  username: string,
+  password: string,
+): Promise<void> {
+  await page.goto(oauth2Data.url);
+  await page.locator('#okta-signin-username').fill(username);
+  await page.locator('#okta-signin-password').fill(password);
+  await page.locator('[type="submit"]').first().click();
+  await page.waitForURL('**/', { timeout: 15000 });
+}
+
+/**
+ * Logout from OAuth2 session.
+ * POSTs to /api/logout with CSRF token and follows the provider logout URL.
  */
 export async function oauth2Logout(page: Page): Promise<void> {
-  await page.goto('/api/logout');
+  const cookies = await page.context().cookies();
+  const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');
+  const origin = new URL(page.url()).origin;
+  const response = await page.request.post('/api/logout', {
+    headers: {
+      'X-XSRF-TOKEN': xsrfCookie?.value ?? '',
+      Origin: origin,
+    },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (body.logoutUrl) {
+    await page.goto(body.logoutUrl);
+  }
   await page.waitForURL('**/', { timeout: 15000 });
 }
