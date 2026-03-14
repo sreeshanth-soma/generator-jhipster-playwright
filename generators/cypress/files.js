@@ -7,14 +7,21 @@
  *   renameTo: (ctx, file) => output path in generated app
  *   templates: ['filename'] — JHipster auto-appends .ejs
  */
+import { clientRootTemplatesBlock } from 'generator-jhipster/generators/client/support';
 
 const PLAYWRIGHT_TEMPLATE_SOURCE_DIR = 'src/test/javascript/cypress/';
 
 export const playwrightFiles = {
   common: [
     {
+      templates: ['README.md.jhi.playwright'],
+    },
+    {
       templates: ['playwright.config.ts'],
     },
+    clientRootTemplatesBlock({
+      templates: ['eslint.config.ts.jhi.playwright'],
+    }),
   ],
   clientTestFw: [
     {

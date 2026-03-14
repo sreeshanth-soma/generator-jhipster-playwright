@@ -1,0 +1,16 @@
+<&_ if (fragment.importsSection) { -&>
+import playwright from 'eslint-plugin-playwright';
+<&_ } -&>
+<&_ if (fragment.configSection) { -&>
+  {
+    files: ['<%= this.relativeDir(clientRootDir, playwrightDir) %>**/*.ts'],
+    ...playwright.configs['flat/recommended'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+    },
+  },
+<&_ } -&>

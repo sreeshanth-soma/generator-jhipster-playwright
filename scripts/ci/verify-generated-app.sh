@@ -2,16 +2,26 @@
 
 set -euo pipefail
 
-framework="${1:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir>}"
-base_name="${2:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir>}"
-blueprint_tarball="${3:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir>}"
-app_dir="${4:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir>}"
+framework="${1:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir> [auth-type]}"
+base_name="${2:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir> [auth-type]}"
+blueprint_tarball="${3:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir> [auth-type]}"
+app_dir="${4:?Usage: verify-generated-app.sh <framework> <base-name> <blueprint-tarball> <app-dir> [auth-type]}"
+auth_type="${5:-jwt}"
 
 case "${framework}" in
   react|angular|vue)
     ;;
   *)
     echo "Unsupported framework: ${framework}" >&2
+    exit 1
+    ;;
+esac
+
+case "${auth_type}" in
+  jwt|session)
+    ;;
+  *)
+    echo "Unsupported auth type: ${auth_type}" >&2
     exit 1
     ;;
 esac
@@ -23,7 +33,7 @@ application {
   config {
     baseName ${base_name}
     applicationType monolith
-    authenticationType jwt
+    authenticationType ${auth_type}
     clientFramework ${framework}
     devDatabaseType h2Disk
     testFrameworks [cypress]

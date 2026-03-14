@@ -53,7 +53,7 @@ jobs:
           compression-level: 0
 
   generated-e2e:
-    name: Generated ${{ matrix.framework }} E2E
+    name: Generated ${{ matrix.framework }} (${{ matrix.auth }}) E2E
     needs: validate-package
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -62,14 +62,29 @@ jobs:
       matrix:
         include:
           - framework: react
+            auth: jwt
             base_name: ciReactApp
             app_dir: ci-react-app
           - framework: angular
+            auth: jwt
             base_name: ciAngularApp
             app_dir: ci-angular-app
           - framework: vue
+            auth: jwt
             base_name: ciVueApp
             app_dir: ci-vue-app
+          - framework: react
+            auth: session
+            base_name: ciReactSessionApp
+            app_dir: ci-react-session-app
+          - framework: angular
+            auth: session
+            base_name: ciAngularSessionApp
+            app_dir: ci-angular-session-app
+          - framework: vue
+            auth: session
+            base_name: ciVueSessionApp
+            app_dir: ci-vue-session-app
 
     steps:
       - name: Checkout repository
@@ -98,20 +113,21 @@ jobs:
           tarball_path="$(echo "${RUNNER_TEMP}/blueprint-package"/*.tgz)"
           npm install -g generator-jhipster@9.0.0 "${tarball_path}"
 
-      - name: Generate and verify ${{ matrix.framework }} app
+      - name: Generate and verify ${{ matrix.framework }} (${{ matrix.auth }}) app
         run: |
           tarball_path="$(echo "${RUNNER_TEMP}/blueprint-package"/*.tgz)"
           bash scripts/ci/verify-generated-app.sh \
             "${{ matrix.framework }}" \
             "${{ matrix.base_name }}" \
             "${tarball_path}" \
-            "${RUNNER_TEMP}/${{ matrix.app_dir }}"
+            "${RUNNER_TEMP}/${{ matrix.app_dir }}" \
+            "${{ matrix.auth }}"
 
       - name: Upload failure artifacts
         if: ${{ failure() && !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: generated-app-${{ matrix.framework }}
+          name: generated-app-${{ matrix.framework }}-${{ matrix.auth }}
           retention-days: 7
           if-no-files-found: warn
           path: |
