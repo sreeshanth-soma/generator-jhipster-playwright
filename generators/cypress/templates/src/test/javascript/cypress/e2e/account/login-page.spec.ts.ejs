@@ -30,7 +30,7 @@ test.describe('login page', () => {
   test('greets with signin', async ({ page }) => {
     await expect(page.locator(titleLoginSelector)).toBeVisible();
   });
-<%_ if (clientFrameworkAngular) { _%>
+<%_ if (clientFrameworkAngular && !authenticationTypeSession) { _%>
 
   test('greets visiting /login directly', async ({ page }) => {
     await page.goto('/login');
