@@ -104,8 +104,7 @@ test.describe('/account/settings', () => {
       expect(saveResp.status()).toBe(200);
 <%_ } else { _%>
       await request.post('/api/authentication', {
-        data: { username: adminUsername, password: adminPassword },
-        form: true,
+        form: { username: adminUsername, password: adminPassword },
       });
       const { cookies } = await request.storageState();
       const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');
@@ -129,8 +128,7 @@ test.describe('/account/settings', () => {
       });
 <%_ } else { _%>
       await request.post('/api/authentication', {
-        data: { username: adminUsername, password: adminPassword },
-        form: true,
+        form: { username: adminUsername, password: adminPassword },
       });
       const { cookies } = await request.storageState();
       const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');

@@ -211,13 +211,20 @@ export async function authenticatedRequest(
 
 /**
  * Login via Session auth.
+ * Spring Security CSRF requires the XSRF-TOKEN to be included as X-XSRF-TOKEN
+ * header on the authentication POST. We first hit any API endpoint to receive
+ * the token cookie, then POST credentials with that token.
  * The session cookie lives in the `request` context; we copy it to the
  * page's browser context so that page navigations are also authenticated.
  */
 export async function login(page: Page, request: APIRequestContext, username: string, password: string): Promise<void> {
+  // Trigger CSRF cookie issuance (401 is fine — we just need the XSRF-TOKEN cookie)
+  await request.get('/api/account');
+  const { cookies: initialCookies } = await request.storageState();
+  const xsrfCookie = initialCookies.find(c => c.name === 'XSRF-TOKEN');
   await request.post('/api/authentication', {
-    data: { username, password },
-    form: true,
+    form: { username, password },
+    headers: xsrfCookie ? { 'X-XSRF-TOKEN': xsrfCookie.value } : {},
   });
   const { cookies } = await request.storageState();
   await page.context().addCookies(cookies);
