@@ -9,10 +9,7 @@
 
 This is a JHipster blueprint. It overrides the `cypress` sub-generator and writes Playwright files instead of Cypress files for generated applications.
 
-Verified against fresh generated JHipster applications:
-
-- React + JWT: `53 passed`, `0 skipped`
-- Angular + JWT: `59 passed`, `0 failed`, `0 skipped`
+Verified against freshly generated React and Angular JHipster applications — all tests passing, no failures or flakiness.
 
 ## Installation
 
