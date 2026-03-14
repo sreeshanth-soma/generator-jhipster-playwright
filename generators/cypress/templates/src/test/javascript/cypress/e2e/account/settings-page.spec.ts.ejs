@@ -1,5 +1,5 @@
 <%#
-  Source EJS variables: ZERO — settings-page.cy.ts.ejs has no EJS variables.
+  Source EJS variables: authenticationTypeJwt
 -%>
 import { test, expect } from '@playwright/test';
 import {
@@ -10,6 +10,9 @@ import {
   credentials,
   login,
   authenticatedRequest,
+<%_ if (authenticationTypeJwt) { _%>
+  getAuthToken,
+<%_ } _%>
 } from '../../support/commands';
 import { clickOnSettingsItem } from '../../support/navbar';
 import type { Account } from '../../support/account';
@@ -81,5 +84,71 @@ test.describe('/account/settings', () => {
     await page.locator(submitSettingsSelector).click();
     const response = await responsePromise;
     expect(response.status()).toBe(200);
+  });
+
+  test.describe('if there is another user with an email', () => {
+    let originalAdminAccount: Account;
+    const testAdminEmail = 'admin@localhost.fr';
+
+    test.beforeAll(async ({ request }) => {
+<%_ if (authenticationTypeJwt) { _%>
+      const adminToken = await getAuthToken(request, adminUsername, adminPassword);
+      const accountResp = await request.get('/api/account', {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      originalAdminAccount = await accountResp.json() as Account;
+      const saveResp = await request.post('/api/account', {
+        data: { ...originalAdminAccount, email: testAdminEmail },
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      });
+      expect(saveResp.status()).toBe(200);
+<%_ } else { _%>
+      await request.post('/api/authentication', {
+        data: { username: adminUsername, password: adminPassword },
+        form: true,
+      });
+      const { cookies } = await request.storageState();
+      const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');
+      const headers = { 'Content-Type': 'application/json', ...(xsrfCookie ? { 'X-XSRF-TOKEN': xsrfCookie.value } : {}) };
+      const accountResp = await request.get('/api/account', { headers });
+      originalAdminAccount = await accountResp.json() as Account;
+      const saveResp = await request.post('/api/account', {
+        data: { ...originalAdminAccount, email: testAdminEmail },
+        headers,
+      });
+      expect(saveResp.status()).toBe(200);
+<%_ } _%>
+    });
+
+    test.afterAll(async ({ request }) => {
+<%_ if (authenticationTypeJwt) { _%>
+      const adminToken = await getAuthToken(request, adminUsername, adminPassword);
+      await request.post('/api/account', {
+        data: originalAdminAccount,
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      });
+<%_ } else { _%>
+      await request.post('/api/authentication', {
+        data: { username: adminUsername, password: adminPassword },
+        form: true,
+      });
+      const { cookies } = await request.storageState();
+      const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');
+      await request.post('/api/account', {
+        data: originalAdminAccount,
+        headers: { 'Content-Type': 'application/json', ...(xsrfCookie ? { 'X-XSRF-TOKEN': xsrfCookie.value } : {}) },
+      });
+<%_ } _%>
+    });
+
+    test("should not be able to change 'user' email to same value", async ({ page }) => {
+      await page.locator(emailSettingsSelector).clear();
+      await page.locator(firstNameSettingsSelector).fill('jhipster');
+      await page.locator(emailSettingsSelector).fill(testAdminEmail);
+      const responsePromise = page.waitForResponse('**/api/account');
+      await page.locator(submitSettingsSelector).click();
+      const response = await responsePromise;
+      expect(response.status()).toBe(400);
+    });
   });
 });

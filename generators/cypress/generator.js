@@ -91,6 +91,7 @@ export default class extends BaseApplicationGenerator {
         const dependencies = packageJsonStorage.createStorage('dependencies');
         const devDependencies = packageJsonStorage.createStorage('devDependencies');
         devDependencies.set('@playwright/test', '^1.58.2');
+        devDependencies.set('eslint-plugin-playwright', '^2.9.0');
 
         if (application.clientFrameworkAngular) {
           // ng-bootstrap and Bootstrap both declare Popper as a peer dependency.
