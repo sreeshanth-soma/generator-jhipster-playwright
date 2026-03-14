@@ -22,7 +22,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run webapp:dev<% if (clientFrameworkAngular) { %> -- --open=false<% } %>',
+    command: 'npm run webapp:dev<% if (clientFrameworkAngular) { %> -- --open=false<% if (authenticationTypeSession) { %> --proxy-config proxy.config.playwright.mjs<% } %><% } %>',
     url: 'http://localhost:<%= devServerPortProxy || devServerPort || gatewayServerPort || serverPort %>/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

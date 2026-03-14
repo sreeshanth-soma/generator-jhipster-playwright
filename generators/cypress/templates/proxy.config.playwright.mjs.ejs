@@ -1,0 +1,26 @@
+<%#
+  Playwright-specific Vite proxy config for Angular session auth apps.
+
+  The standard proxy.config.mjs uses the regex '^/(api|...|login)' which
+  incorrectly matches lazy-loaded route chunks named login-<hash>.js,
+  causing the Angular login component to fail with a 404. This file uses
+  'login(?=$|/)' so only the exact /login path (and sub-paths) is proxied.
+-%>
+const backendHost = '127.0.0.1';
+const backendPort = <%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>;
+
+/**
+ * @type {import('vite').CommonServerOptions['proxy']}
+ */
+export default {
+<%_ if (communicationSpringWebsocket) { _%>
+  '/websocket': {
+    target: `ws://${backendHost}:${backendPort}`,
+    ws: true,
+  },
+<%_ } _%>
+  '^/(api|management|v3/api-docs<% if (locals.databaseTypeSql && locals.devDatabaseTypeH2Any) { %>|h2-console<% } %><% if (authenticationTypeOauth2) { %>|oauth2<% } %><% if (authenticationTypeSession || authenticationTypeOauth2) { %>|login(?=$|/)<% } %><% if (applicationTypeGateway || applicationTypeMicroservice) { %>|services<% } %>)': {
+    target: `http://${backendHost}:${backendPort}`,
+    xfwd: true,
+  },
+};

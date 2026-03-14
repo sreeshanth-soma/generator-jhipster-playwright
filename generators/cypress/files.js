@@ -19,6 +19,10 @@ export const playwrightFiles = {
     {
       templates: ['playwright.config.ts'],
     },
+    {
+      condition: generator => generator.clientFrameworkAngular && generator.authenticationTypeSession,
+      templates: ['proxy.config.playwright.mjs'],
+    },
     clientRootTemplatesBlock({
       templates: ['eslint.config.ts.jhi.playwright'],
     }),
