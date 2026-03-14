@@ -103,8 +103,12 @@ test.describe('/account/settings', () => {
       });
       expect(saveResp.status()).toBe(200);
 <%_ } else { _%>
+      await request.get('/api/account');
+      const { cookies: preLoginCookies } = await request.storageState();
+      const preLoginXsrf = preLoginCookies.find(c => c.name === 'XSRF-TOKEN');
       await request.post('/api/authentication', {
         form: { username: adminUsername, password: adminPassword },
+        headers: preLoginXsrf ? { 'X-XSRF-TOKEN': preLoginXsrf.value } : {},
       });
       const { cookies } = await request.storageState();
       const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');
@@ -127,8 +131,12 @@ test.describe('/account/settings', () => {
         headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       });
 <%_ } else { _%>
+      await request.get('/api/account');
+      const { cookies: preLoginCookies } = await request.storageState();
+      const preLoginXsrf = preLoginCookies.find(c => c.name === 'XSRF-TOKEN');
       await request.post('/api/authentication', {
         form: { username: adminUsername, password: adminPassword },
+        headers: preLoginXsrf ? { 'X-XSRF-TOKEN': preLoginXsrf.value } : {},
       });
       const { cookies } = await request.storageState();
       const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN');
