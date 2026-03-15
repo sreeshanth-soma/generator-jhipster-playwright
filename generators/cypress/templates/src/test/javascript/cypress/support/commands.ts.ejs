@@ -8,7 +8,7 @@
  *   - clientFrameworkAngular, clientFrameworkReact, clientFrameworkVue
  */
 import type { Page, APIRequestContext, APIResponse } from '@playwright/test';
-import { expect, request as pwRequest } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 // ***********************************************
 // Begin Specific Selector Attributes
@@ -153,14 +153,30 @@ export async function login(page: Page, request: APIRequestContext, username: st
   await waitForAppShell(page);
 }
 <%_ } else if (authenticationTypeOauth2) { _%>
+// Session cookies captured after browser OAuth2 login for API requests.
+let _sessionCookie: string | undefined;
+let _xsrfToken: string | undefined;
+
 /**
  * Perform authenticated API request (OAuth2).
+ * Uses session cookies captured from the browser after login.
  */
 export async function authenticatedRequest(
   request: APIRequestContext,
   data: { method?: string; url: string; data?: unknown },
 ): Promise<APIResponse> {
-  return request.fetch(data.url, { method: data.method ?? 'GET', data: data.data });
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (_sessionCookie) {
+    headers['Cookie'] = _sessionCookie;
+  }
+  if (_xsrfToken) {
+    headers['X-XSRF-TOKEN'] = _xsrfToken;
+  }
+  return request.fetch(data.url, {
+    method: data.method ?? 'GET',
+    data: data.data,
+    headers,
+  });
 }
 
 /**
@@ -188,6 +204,10 @@ export async function login(page: Page, request: APIRequestContext, username: st
   }
   await page.waitForURL('**/', { timeout: 15000 });
   await waitForAppShell(page);
+  // Capture session cookies so authenticatedRequest() can make API calls.
+  const cookies = await page.context().cookies();
+  _sessionCookie = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+  _xsrfToken = cookies.find(c => c.name === 'XSRF-TOKEN')?.value;
 }
 <%_ } else { _%>
 /**

@@ -9,7 +9,15 @@
 
 This is a JHipster blueprint. It overrides the `cypress` sub-generator and writes Playwright files instead of Cypress files for generated applications.
 
-Verified against freshly generated React, Angular, and Vue JHipster applications — all tests passing, no failures or flakiness.
+### Supported Matrix
+
+| Framework | JWT | Session | OAuth2 |
+|-----------|-----|---------|--------|
+| React     | Yes | Yes     | Yes    |
+| Angular   | Yes | Yes     | Yes    |
+| Vue       | Yes | Yes     | Yes    |
+
+All 9 combinations are verified in CI against freshly generated JHipster applications. OAuth2 tests run against a Keycloak instance.
 
 ## Installation
 
@@ -59,6 +67,7 @@ application {
   config {
     baseName myApp
     clientFramework react
+    authenticationType jwt
     testFrameworks [cypress]
   }
 }
@@ -86,6 +95,12 @@ npx playwright test
 
 The generated `playwright.config.ts` starts the frontend dev server automatically. The Spring Boot backend still needs to be running before the tests execute.
 
+For OAuth2 applications, a Keycloak instance must be running before the backend starts:
+
+```bash
+docker compose -f src/main/docker/keycloak.yml up -d
+```
+
 ### Generated Output
 
 The blueprint writes:
@@ -96,6 +111,8 @@ The blueprint writes:
 - `@playwright/test` and Playwright npm scripts in the generated application's `package.json`
 
 For Angular applications, the blueprint also adds `@popperjs/core` to the generated app dependencies so the generated frontend has the required Popper peer dependency available.
+
+For Angular session-auth applications, a custom `proxy.config.playwright.mjs` is generated to avoid proxying lazy-loaded route chunks.
 
 ## Local Development
 

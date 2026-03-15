@@ -85,6 +85,18 @@ jobs:
             auth: session
             base_name: ciVueSessionApp
             app_dir: ci-vue-session-app
+          - framework: react
+            auth: oauth2
+            base_name: ciReactOAuth2App
+            app_dir: ci-react-oauth2-app
+          - framework: angular
+            auth: oauth2
+            base_name: ciAngularOAuth2App
+            app_dir: ci-angular-oauth2-app
+          - framework: vue
+            auth: oauth2
+            base_name: ciVueOAuth2App
+            app_dir: ci-vue-oauth2-app
 
     steps:
       - name: Checkout repository

@@ -19,9 +19,14 @@ import {
 
 async function clickDropdownItem(menu: Locator, item: string): Promise<void> {
   await expect(menu).toBeVisible();
-  await menu.click();
   const itemLocator = menu.locator(item);
-  await expect(itemLocator).toBeVisible();
+  // Retry open-then-check: the dropdown can close due to animation or re-render.
+  await expect(async () => {
+    if (!(await itemLocator.isVisible())) {
+      await menu.click();
+    }
+    await expect(itemLocator).toBeVisible();
+  }).toPass({ timeout: 10_000 });
   await itemLocator.click();
 }
 
