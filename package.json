@@ -1,6 +1,6 @@
 {
   "name": "generator-jhipster-playwright",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "JHipster Playwright E2E blueprint - replaces Cypress with Playwright for end-to-end testing",
   "keywords": [
     "yeoman-generator",
